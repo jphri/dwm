@@ -1,0 +1,12 @@
+.cache/
+
+*.o
+dwm
+dwm-msg
+
+config.h
+
+*.orig
+*.rej
+
+
