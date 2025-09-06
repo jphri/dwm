@@ -189,6 +189,7 @@ static void propertynotify(XEvent *e);
 static void quit(const Arg *arg);
 static Monitor *recttomon(int x, int y, int w, int h);
 static void resize(Client *c, int x, int y, int w, int h, int interact);
+static void resize_arrange(Client *c, int x, int y, int w, int h);
 static void resizeclient(Client *c, int x, int y, int w, int h);
 static void resizemouse(const Arg *arg);
 static void restack(Monitor *m);
@@ -1120,8 +1121,9 @@ monocle(Monitor *m)
 			n++;
 	if (n > 0) /* override layout symbol */
 		snprintf(m->ltsymbol, sizeof m->ltsymbol, "[%d]", n);
+
 	for (c = nexttiled(m->clients); c; c = nexttiled(c->next))
-		resize(c, m->wx, m->wy, m->ww - 2 * c->bw, m->wh - 2 * c->bw, 0);
+		resize_arrange(c, m->wx + gappx, m->wy + gappx, m->ww - 2 * gappx, m->wh - 2 * gappx);
 }
 
 void
@@ -1683,6 +1685,12 @@ tagmon(const Arg *arg)
 	sendmon(selmon->sel, dirtomon(arg->i));
 }
 
+void 
+resize_arrange(Client *c, int x, int y, int w, int h)
+{
+	resize(c, x, y, w - (2 * c->bw), h - (2 * c->bw), 0);
+}
+
 void
 tile(Monitor *m)
 {
@@ -1699,15 +1707,19 @@ tile(Monitor *m)
 		mw = m->ww;
 	for (i = my = ty = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), i++)
 		if (i < m->nmaster) {
-			h = (m->wh - my) / (MIN(n, m->nmaster) - i);
-			resize(c, m->wx, m->wy + my, mw - (2*c->bw), h - (2*c->bw), 0);
+			h = (m->wh - my) / (MIN(n, m->nmaster) - i) - 2 * gappx;
+
+			resize_arrange(c, m->wx + gappx, m->wy + my + gappx, mw - 2 * gappx, h);
+
 			if (my + HEIGHT(c) < m->wh)
-				my += HEIGHT(c);
+				my += HEIGHT(c) + 2 * gappx;
 		} else {
-			h = (m->wh - ty) / (n - i);
-			resize(c, m->wx + mw, m->wy + ty, m->ww - mw - (2*c->bw), h - (2*c->bw), 0);
+			h = (m->wh - ty) / (n - i) - 2 * gappx;
+
+			resize_arrange(c, m->wx + mw + gappx, m->wy + ty + gappx, m->ww - mw - 2 * gappx, h);
+
 			if (ty + HEIGHT(c) < m->wh)
-				ty += HEIGHT(c);
+				ty += HEIGHT(c) + 2 * gappx;
 		}
 }
 
