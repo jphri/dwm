@@ -20,6 +20,7 @@
  *
  * To understand everything else, start reading main().
  */
+#include <X11/X.h>
 #include <errno.h>
 #include <locale.h>
 #include <signal.h>
@@ -1164,14 +1165,11 @@ movemouse(const Arg *arg)
 		return;
 	if (!getrootptr(&x, &y))
 		return;
+
+	int grabbing = 1;
 	do {
-		XMaskEvent(dpy, MOUSEMASK|ExposureMask|SubstructureRedirectMask, &ev);
+		XNextEvent(dpy, &ev);
 		switch(ev.type) {
-		case ConfigureRequest:
-		case Expose:
-		case MapRequest:
-			handler[ev.type](&ev);
-			break;
 		case MotionNotify:
 			if ((ev.xmotion.time - lasttime) <= (1000 / refreshrate))
 				continue;
@@ -1193,8 +1191,16 @@ movemouse(const Arg *arg)
 			if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
 				resize(c, nx, ny, c->w, c->h, 1);
 			break;
+		case KeyPress:
+			break;
+		case ButtonRelease:
+			grabbing = 0;
+			break;
+		default:
+			if(handler[ev.type])
+				handler[ev.type](&ev);
 		}
-	} while (ev.type != ButtonRelease);
+	} while (grabbing);
 	XUngrabPointer(dpy, CurrentTime);
 	if ((m = recttomon(c->x, c->y, c->w, c->h)) != selmon) {
 		sendmon(c, m);
@@ -1318,14 +1324,11 @@ resizemouse(const Arg *arg)
 		None, cursor[CurResize]->cursor, CurrentTime) != GrabSuccess)
 		return;
 	XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->bw - 1, c->h + c->bw - 1);
+	
+	int grabbing = 1;
 	do {
-		XMaskEvent(dpy, MOUSEMASK|ExposureMask|SubstructureRedirectMask, &ev);
+		XNextEvent(dpy, &ev);
 		switch(ev.type) {
-		case ConfigureRequest:
-		case Expose:
-		case MapRequest:
-			handler[ev.type](&ev);
-			break;
 		case MotionNotify:
 			if ((ev.xmotion.time - lasttime) <= (1000 / refreshrate))
 				continue;
@@ -1343,8 +1346,16 @@ resizemouse(const Arg *arg)
 			if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
 				resize(c, c->x, c->y, nw, nh, 1);
 			break;
+		case KeyPress:
+			break;
+		case ButtonRelease:
+			grabbing = 0;
+			break;
+		default:
+			if(handler[ev.type])
+				handler[ev.type](&ev);
 		}
-	} while (ev.type != ButtonRelease);
+	} while (grabbing);
 	XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->bw - 1, c->h + c->bw - 1);
 	XUngrabPointer(dpy, CurrentTime);
 	while (XCheckMaskEvent(dpy, EnterWindowMask, &ev));
