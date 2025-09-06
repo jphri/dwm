@@ -6,7 +6,7 @@ include config.mk
 SRC = drw.c dwm.c util.c config.c
 OBJ = ${SRC:.c=.o}
 
-all: dwm
+all: dwm parse_key_test
 
 .c.o:
 	${CC} -c ${CFLAGS} $<
@@ -19,8 +19,13 @@ ${OBJ}: config.mk
 dwm: ${OBJ}
 	${CC} -o $@ ${OBJ} ${LDFLAGS}
 
+parse_key_test: parse_key.o parse_key_test.o
+	${CC} -o $@ $^ ${LDFLAGS}
+
 clean:
 	rm -f dwm ${OBJ} dwm-${VERSION}.tar.gz
+	rm -f parse_key.o parse_key_test.o
+	rm -f parse_key_test
 
 dist: clean
 	mkdir -p dwm-${VERSION}
