@@ -85,34 +85,39 @@ typedef struct {
 	int monitor;
 } Rule;
 
-extern const unsigned int borderpx;
-extern const unsigned int snap;
-extern const int showbar;
-extern const int topbar;
-extern unsigned int gappx;
-extern const char  *fonts[];
-extern const int    fonts_count;
-extern const char *dmenufont;
-extern const char *colors[][3];
+typedef struct {
+	struct {
+		unsigned int borderpx;
+		unsigned int snap;
+		int showbar;
+		int topbar;
+		unsigned int gappx;
+		const char **fonts;
+		int   fontscount;
+		const char *colors[2][3];
+	} appearance;
 
-extern const char *tags[];
-extern const int   tags_size;
+	struct {
+		float mfact;
+		int nmaster;
+		int resizehints;
+		int lockfullscreen;
+		int refreshrate;
+	} lsettings;
 
-extern const Rule  rules[];
-extern const int   rules_count;
+	char **tags;
+	int    tagscount;
 
-extern const float mfact;
-extern const int nmaster;
-extern const int resizehints;
-extern const int lockfullscreen;
-extern const int refreshrate;
+	Rule *rules;
+	int   rulescount;
 
+	Key *keys;
+	int  keyscount;
+
+	Button *buttons;
+	int     buttonscount;
+} Config;
+
+extern Config *currentconfig;
 extern const Layout  layouts[];
-extern const int     layouts_size;
-
-extern const Key  keys[];
-extern const int  keys_size;
-
-extern const Button  buttons[];
-extern const int     buttons_size;
-
+extern int     layoutscount;
