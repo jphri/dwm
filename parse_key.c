@@ -11,6 +11,9 @@
 
 /*
  * key format
+ * 
+ * <buttonsymbol> ::= <modseq> <button> <EOL>
+ *                 | <button> <EOL>
  *
  * <keysymbol> ::= <modseq> <key> <EOL>
  *              | <key> <EOL>
@@ -43,6 +46,7 @@ static void m_tokn(StateMachine *state, int count);
 static unsigned int parse_mod(StateMachine *machine);
 static unsigned int parse_modseq(StateMachine *machine);
 static KeySym parse_key(StateMachine *machine);
+static int parse_button(StateMachine *machine);
 
 KeySymbol
 parse_keysymbol(const char *format)
@@ -63,6 +67,33 @@ parse_keysymbol(const char *format)
 	}
 
 	k.sym = parse_key(&m);
+	if(m.error) {
+		k.error = m.error;
+		return k;
+	}
+
+	return k;
+}
+
+ButtonSymbol
+parse_buttonsymbol(const char *format)
+{
+	ButtonSymbol k = {0};
+	StateMachine m = { .s = format };
+
+	k.button = parse_button(&m);
+	if(!m.error) {
+		return k;
+	}
+
+	m.error = 0;
+	k.mod = parse_modseq(&m);
+	if(m.error) {
+		k.error = m.error;
+		return k;
+	}
+
+	k.button = parse_button(&m);
 	if(m.error) {
 		k.error = m.error;
 		return k;
@@ -144,6 +175,31 @@ parse_key(StateMachine *m)
 
 	return r;
 }
+
+int
+parse_button(StateMachine *m)
+{
+	static struct {
+		const char *bstr;
+		int button;
+	} list[] = {
+		{ "left", Button1 },
+		{ "right", Button3 },
+		{ "middle", Button2 } 
+	};
+	int size = strlen(m->s);
+
+	for(int i = 0; i < LENGTH(list); i++) {
+		if(strncmp(list[i].bstr, m->s, size) == 0) {
+			m_tokn(m, strlen(list[i].bstr));
+			return list[i].button;
+		}
+	}
+	
+	m->error = 1;
+	
+	return -1;
+ }
 
 void
 m_tokn(StateMachine *m, int size)

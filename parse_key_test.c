@@ -19,6 +19,19 @@ static struct
 	{ "p", .r = { .mod = 0, .sym = XK_p } },
 };
 
+static struct
+{
+	const char *str;
+	ButtonSymbol r;
+} button_symbol_test[] = {
+	{ "alt + super + ctrl + shift + left", .r = { .mod = Mod1Mask | Mod4Mask | ControlMask | ShiftMask , .button = Button1 } },
+	{ "super + ctrl + shift + right", .r = { .mod = Mod4Mask | ControlMask | ShiftMask , .button = Button3 } },
+	{ "ctrl + shift + left", .r = { .mod = ControlMask | ShiftMask , .button = Button1 } },
+	{ "shift + middle", .r = { .mod = ShiftMask , .button = Button2 } },
+	{ "left", .r = { .mod = 0, .button = Button1 } },
+};
+
+
 int
 main()
 {
@@ -37,6 +50,25 @@ main()
 
 		if(rr.sym != test_table[i].r.sym) {
 			printf("%d: wrong sym\n", i);
+			return 1;
+		}
+	}
+
+	for(int i = 0; i < LENGTH(button_symbol_test); i++) {
+		ButtonSymbol rr = parse_buttonsymbol(button_symbol_test[i].str);
+
+		if(rr.error) {
+			printf("%d: error\n", i);
+			return 1;
+		}
+
+		if(rr.mod != button_symbol_test[i].r.mod) {
+			printf("%d: wrong mod\n", i);
+			return 1;
+		}
+
+		if(rr.button != button_symbol_test[i].r.button) {
+			printf("%d: wrong button\n", i);
 			return 1;
 		}
 	}
