@@ -11,9 +11,6 @@ all: dwm parse_key_test
 .c.o:
 	${CC} -c ${CFLAGS} $<
 
-config.c: config.def.c
-	cp config.def.c $@
-
 ${OBJ}: config.mk
 
 dwm: ${OBJ}
