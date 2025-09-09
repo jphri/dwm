@@ -1986,6 +1986,13 @@ restart(const Arg *arg)
 int
 main(int argc, char *argv[])
 {
+	char defaultpath[256];
+	const char *configpath = getenv("DWM_CONFIG_PATH");
+	if(!configpath) {
+		snprintf(defaultpath, sizeof(defaultpath), "%s/.config/dwm/config", getenv("HOME"));
+		configpath = defaultpath;
+	}
+
 	if (argc == 2 && !strcmp("-v", argv[1]))
 		die("dwm-"VERSION);
 	else if (argc != 1)
@@ -1998,7 +2005,7 @@ main(int argc, char *argv[])
 	do {
 		running = 1;
 		repeat = 0;
-		loadconfig("test.conf");
+		loadconfig(configpath);
 		setup();
 #ifdef __OpenBSD__
 		if (pledge("stdio rpath proc exec", NULL) == -1)
