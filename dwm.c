@@ -51,7 +51,7 @@
 #define INTERSECT(x,y,w,h,m)    (MAX(0, MIN((x)+(w),(m)->wx+(m)->ww) - MAX((x),(m)->wx)) \
                                * MAX(0, MIN((y)+(h),(m)->wy+(m)->wh) - MAX((y),(m)->wy)))
 #define MOUSEMASK               (BUTTONMASK|PointerMotionMask)
-#define TAGMASK                 ((1 << tags_size) - 1)
+#define TAGMASK                 ((1 << currentconfig->tagscount) - 1)
 #define TEXTW(X)                (drw_fontset_getwidth(drw, (X)) + lrpad)
 
 #include "dat.h"
@@ -83,13 +83,14 @@ static void (*handler[LASTEvent]) (XEvent *) = {
 	[UnmapNotify] = unmapnotify
 };
 static Atom wmatom[WMLast], netatom[NetLast];
-static int running = 1;
+static int running = 1, repeat = 0;
 static Cur *cursor[CurLast];
 static Clr **scheme;
 static Display *dpy;
 static Drw *drw;
 static Monitor *mons, *selmon;
 static Window root, wmcheckwin;
+static const char *configpath;
 
 /* function implementations */
 void
@@ -108,8 +109,8 @@ applyrules(Client *c)
 	class    = ch.res_class ? ch.res_class : broken;
 	instance = ch.res_name  ? ch.res_name  : broken;
 
-	for (i = 0; i < rules_count; i++) {
-		r = &rules[i];
+	for (i = 0; i < currentconfig->rulescount; i++) {
+		r = &currentconfig->rules[i];
 		if ((!r->title || strstr(c->name, r->title))
 		&& (!r->class || strstr(class, r->class))
 		&& (!r->instance || strstr(instance, r->instance)))
@@ -160,7 +161,7 @@ applysizehints(Client *c, int *x, int *y, int *w, int *h, int interact)
 		*h = bh;
 	if (*w < bh)
 		*w = bh;
-	if (resizehints || c->isfloating || !c->mon->lt[c->mon->sellt]->arrange) {
+	if (currentconfig->lsettings.resizehints || c->isfloating || !c->mon->lt[c->mon->sellt]->arrange) {
 		if (!c->hintsvalid)
 			updatesizehints(c);
 		/* see last two sentences in ICCCM 4.1.2.3 */
@@ -251,9 +252,9 @@ buttonpress(XEvent *e)
 	if (ev->window == selmon->barwin) {
 		i = x = 0;
 		do
-			x += TEXTW(tags[i]);
-		while (ev->x >= x && ++i < tags_size);
-		if (i < tags_size) {
+			x += TEXTW(currentconfig->tags[i]);
+		while (ev->x >= x && ++i < currentconfig->tagscount);
+		if (i < currentconfig->tagscount) {
 			click = ClkTagBar;
 			arg.ui = 1 << i;
 		} else if (ev->x < x + TEXTW(selmon->ltsymbol))
@@ -268,10 +269,10 @@ buttonpress(XEvent *e)
 		XAllowEvents(dpy, ReplayPointer, CurrentTime);
 		click = ClkClientWin;
 	}
-	for (i = 0; i < buttons_size; i++)
-		if (click == buttons[i].click && buttons[i].func && buttons[i].button == ev->button
-		&& CLEANMASK(buttons[i].mask) == CLEANMASK(ev->state))
-			buttons[i].func(click == ClkTagBar && buttons[i].arg.i == 0 ? &arg : &buttons[i].arg);
+	for (i = 0; i < currentconfig->buttonscount; i++)
+		if (click == currentconfig->buttons[i].click && currentconfig->buttons[i].func && currentconfig->buttons[i].button == ev->button
+		&& CLEANMASK(currentconfig->buttons[i].mask) == CLEANMASK(ev->state))
+			currentconfig->buttons[i].func(click == ClkTagBar && currentconfig->buttons[i].arg.i == 0 ? &arg : &currentconfig->buttons[i].arg);
 }
 
 void
@@ -454,12 +455,12 @@ createmon(void)
 
 	m = ecalloc(1, sizeof(Monitor));
 	m->tagset[0] = m->tagset[1] = 1;
-	m->mfact = mfact;
-	m->nmaster = nmaster;
-	m->showbar = showbar;
-	m->topbar = topbar;
+	m->mfact = currentconfig->lsettings.mfact;
+	m->nmaster = currentconfig->lsettings.nmaster;
+	m->showbar = currentconfig->appearance.showbar;
+	m->topbar = currentconfig->appearance.topbar;
 	m->lt[0] = &layouts[0];
-	m->lt[1] = &layouts[1 % layouts_size];
+	m->lt[1] = &layouts[1 % layoutscount];
 	strncpy(m->ltsymbol, layouts[0].symbol, sizeof m->ltsymbol);
 	return m;
 }
@@ -537,10 +538,10 @@ drawbar(Monitor *m)
 			urg |= c->tags;
 	}
 	x = 0;
-	for (i = 0; i < tags_size; i++) {
-		w = TEXTW(tags[i]);
+	for (i = 0; i < currentconfig->tagscount; i++) {
+		w = TEXTW(currentconfig->tags[i]);
 		drw_setscheme(drw, scheme[m->tagset[m->seltags] & 1 << i ? SchemeSel : SchemeNorm]);
-		drw_text(drw, x, 0, w, bh, lrpad / 2, tags[i], urg & 1 << i);
+		drw_text(drw, x, 0, w, bh, lrpad / 2, currentconfig->tags[i], urg & 1 << i);
 		if (occ & 1 << i)
 			drw_rect(drw, x + boxs, boxs, boxw, boxw,
 				m == selmon && selmon->sel && selmon->sel->tags & 1 << i,
@@ -657,7 +658,7 @@ focusstack(const Arg *arg)
 {
 	Client *c = NULL, *i;
 
-	if (!selmon->sel || (selmon->sel->isfullscreen && lockfullscreen))
+	if (!selmon->sel || (selmon->sel->isfullscreen && currentconfig->lsettings.lockfullscreen))
 		return;
 	if (arg->i > 0) {
 		for (c = selmon->sel->next; c && !ISVISIBLE(c); c = c->next);
@@ -756,11 +757,11 @@ grabbuttons(Client *c, int focused)
 		if (!focused)
 			XGrabButton(dpy, AnyButton, AnyModifier, c->win, False,
 				BUTTONMASK, GrabModeSync, GrabModeSync, None, None);
-		for (i = 0; i < buttons_size; i++)
-			if (buttons[i].click == ClkClientWin)
+		for (i = 0; i < currentconfig->buttonscount; i++)
+			if (currentconfig->buttons[i].click == ClkClientWin)
 				for (j = 0; j < LENGTH(modifiers); j++)
-					XGrabButton(dpy, buttons[i].button,
-						buttons[i].mask | modifiers[j],
+					XGrabButton(dpy, currentconfig->buttons[i].button,
+						currentconfig->buttons[i].mask | modifiers[j],
 						c->win, False, BUTTONMASK,
 						GrabModeAsync, GrabModeSync, None, None);
 	}
@@ -782,12 +783,12 @@ grabkeys(void)
 		if (!syms)
 			return;
 		for (k = start; k <= end; k++)
-			for (i = 0; i < keys_size; i++)
+			for (i = 0; i < currentconfig->keyscount; i++)
 				/* skip modifier codes, we do that ourselves */
-				if (keys[i].keysym == syms[(k - start) * skip])
+				if (currentconfig->keys[i].keysym == syms[(k - start) * skip])
 					for (j = 0; j < LENGTH(modifiers); j++)
 						XGrabKey(dpy, k,
-							 keys[i].mod | modifiers[j],
+							 currentconfig->keys[i].mod | modifiers[j],
 							 root, True,
 							 GrabModeAsync, GrabModeAsync);
 		XFree(syms);
@@ -822,11 +823,11 @@ keypress(XEvent *e)
 
 	ev = &e->xkey;
 	keysym = XKeycodeToKeysym(dpy, (KeyCode)ev->keycode, 0);
-	for (i = 0; i < keys_size; i++)
-		if (keysym == keys[i].keysym
-		&& CLEANMASK(keys[i].mod) == CLEANMASK(ev->state)
-		&& keys[i].func)
-			keys[i].func(&(keys[i].arg));
+	for (i = 0; i < currentconfig->keyscount; i++)
+		if (keysym == currentconfig->keys[i].keysym
+		&& CLEANMASK(currentconfig->keys[i].mod) == CLEANMASK(ev->state)
+		&& currentconfig->keys[i].func)
+			currentconfig->keys[i].func(&(currentconfig->keys[i].arg));
 }
 
 void
@@ -876,7 +877,7 @@ manage(Window w, XWindowAttributes *wa)
 		c->y = c->mon->wy + c->mon->wh - HEIGHT(c);
 	c->x = MAX(c->x, c->mon->wx);
 	c->y = MAX(c->y, c->mon->wy);
-	c->bw = borderpx;
+	c->bw = currentconfig->appearance.borderpx;
 
 	wc.border_width = c->bw;
 	XConfigureWindow(dpy, w, CWBorderWidth, &wc);
@@ -940,7 +941,7 @@ monocle(Monitor *m)
 		snprintf(m->ltsymbol, sizeof m->ltsymbol, "[%d]", n);
 
 	for (c = nexttiled(m->clients); c; c = nexttiled(c->next))
-		resize_arrange(c, m->wx + gappx, m->wy + gappx, m->ww - 2 * gappx, m->wh - 2 * gappx);
+		resize_arrange(c, m->wx + currentconfig->appearance.gappx, m->wy + currentconfig->appearance.gappx, m->ww - 2 * currentconfig->appearance.gappx, m->wh - 2 * currentconfig->appearance.gappx);
 }
 
 void
@@ -987,22 +988,22 @@ movemouse(const Arg *arg)
 		XNextEvent(dpy, &ev);
 		switch(ev.type) {
 		case MotionNotify:
-			if ((ev.xmotion.time - lasttime) <= (1000 / refreshrate))
+			if ((ev.xmotion.time - lasttime) <= (1000 / currentconfig->lsettings.refreshrate))
 				continue;
 			lasttime = ev.xmotion.time;
 
 			nx = ocx + (ev.xmotion.x - x);
 			ny = ocy + (ev.xmotion.y - y);
-			if (abs(selmon->wx - nx) < snap)
+			if (abs(selmon->wx - nx) < currentconfig->appearance.snap)
 				nx = selmon->wx;
-			else if (abs((selmon->wx + selmon->ww) - (nx + WIDTH(c))) < snap)
+			else if (abs((selmon->wx + selmon->ww) - (nx + WIDTH(c))) < currentconfig->appearance.snap)
 				nx = selmon->wx + selmon->ww - WIDTH(c);
-			if (abs(selmon->wy - ny) < snap)
+			if (abs(selmon->wy - ny) < currentconfig->appearance.snap)
 				ny = selmon->wy;
-			else if (abs((selmon->wy + selmon->wh) - (ny + HEIGHT(c))) < snap)
+			else if (abs((selmon->wy + selmon->wh) - (ny + HEIGHT(c))) < currentconfig->appearance.snap)
 				ny = selmon->wy + selmon->wh - HEIGHT(c);
 			if (!c->isfloating && selmon->lt[selmon->sellt]->arrange
-			&& (abs(nx - c->x) > snap || abs(ny - c->y) > snap))
+			&& (abs(nx - c->x) > currentconfig->appearance.snap || abs(ny - c->y) > currentconfig->appearance.snap))
 				togglefloating(NULL);
 			if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
 				resize(c, nx, ny, c->w, c->h, 1);
@@ -1146,7 +1147,7 @@ resizemouse(const Arg *arg)
 		XNextEvent(dpy, &ev);
 		switch(ev.type) {
 		case MotionNotify:
-			if ((ev.xmotion.time - lasttime) <= (1000 / refreshrate))
+			if ((ev.xmotion.time - lasttime) <= (1000 / currentconfig->lsettings.refreshrate))
 				continue;
 			lasttime = ev.xmotion.time;
 
@@ -1156,7 +1157,7 @@ resizemouse(const Arg *arg)
 			&& c->mon->wy + nh >= selmon->wy && c->mon->wy + nh <= selmon->wy + selmon->wh)
 			{
 				if (!c->isfloating && selmon->lt[selmon->sellt]->arrange
-				&& (abs(nw - c->w) > snap || abs(nh - c->h) > snap))
+				&& (abs(nw - c->w) > currentconfig->appearance.snap || abs(nh - c->h) > currentconfig->appearance.snap))
 					togglefloating(NULL);
 			}
 			if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
@@ -1387,7 +1388,7 @@ setup(void)
 	sh = DisplayHeight(dpy, screen);
 	root = RootWindow(dpy, screen);
 	drw = drw_create(dpy, screen, root, sw, sh);
-	if (!drw_fontset_create(drw, fonts, fonts_count))
+	if (!drw_fontset_create(drw, currentconfig->appearance.fonts, currentconfig->appearance.fontscount))
 		die("no fonts could be loaded.");
 	lrpad = drw->fonts->h;
 	bh = drw->fonts->h + 2;
@@ -1414,7 +1415,7 @@ setup(void)
 	/* init appearance */
 	scheme = ecalloc(LASTScheme, sizeof(Clr *));
 	for (i = 0; i < LASTScheme; i++)
-		scheme[i] = drw_scm_create(drw, colors[i], 3);
+		scheme[i] = drw_scm_create(drw, currentconfig->appearance.colors[i], 3);
 	/* init bars */
 	updatebars();
 	updatestatus();
@@ -1487,7 +1488,7 @@ spawn(const Arg *arg)
 		sa.sa_handler = SIG_DFL;
 		sigaction(SIGCHLD, &sa, NULL);
 
-		execvp(((char **)arg->v)[0], (char **)arg->v);
+		execl("/bin/sh", "/bin/sh", "-c", arg->v, NULL);
 		die("dwm: execvp '%s' failed:", ((char **)arg->v)[0]);
 	}
 }
@@ -1532,19 +1533,19 @@ tile(Monitor *m)
 		mw = m->ww;
 	for (i = my = ty = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), i++)
 		if (i < m->nmaster) {
-			h = (m->wh - my) / (MIN(n, m->nmaster) - i) - 2 * gappx;
+			h = (m->wh - my) / (MIN(n, m->nmaster) - i) - 2 * currentconfig->appearance.gappx;
 
-			resize_arrange(c, m->wx + gappx, m->wy + my + gappx, mw - 2 * gappx, h);
+			resize_arrange(c, m->wx + currentconfig->appearance.gappx, m->wy + my + currentconfig->appearance.gappx, mw - 2 * currentconfig->appearance.gappx, h);
 
 			if (my + HEIGHT(c) < m->wh)
-				my += HEIGHT(c) + 2 * gappx;
+				my += HEIGHT(c) + 2 * currentconfig->appearance.gappx;
 		} else {
-			h = (m->wh - ty) / (n - i) - 2 * gappx;
+			h = (m->wh - ty) / (n - i) - 2 * currentconfig->appearance.gappx;
 
-			resize_arrange(c, m->wx + mw + gappx, m->wy + ty + gappx, m->ww - mw - 2 * gappx, h);
+			resize_arrange(c, m->wx + mw + currentconfig->appearance.gappx, m->wy + ty + currentconfig->appearance.gappx, m->ww - mw - 2 * currentconfig->appearance.gappx, h);
 
 			if (ty + HEIGHT(c) < m->wh)
-				ty += HEIGHT(c) + 2 * gappx;
+				ty += HEIGHT(c) + 2 * currentconfig->appearance.gappx;
 		}
 }
 
@@ -1976,9 +1977,53 @@ zoom(const Arg *arg)
 	pop(c);
 }
 
+void
+restart(const Arg *arg)
+{
+	loadconfig(configpath);
+	free(drw);
+
+	drw = drw_create(dpy, screen, root, sw, sh);
+	if (!drw_fontset_create(drw, currentconfig->appearance.fonts, currentconfig->appearance.fontscount))
+		die("no fonts could be loaded.");
+
+	free(scheme);
+	scheme = ecalloc(LASTScheme, sizeof(Clr *));
+	for (int i = 0; i < LASTScheme; i++)
+		scheme[i] = drw_scm_create(drw, currentconfig->appearance.colors[i], 3);
+
+	updatebars();
+	updatestatus();
+
+	Client *c;
+	Monitor *m;
+
+	for (m = mons; m; m = m->next) {
+		for (c = m->clients; c; c = c->next) {
+			c->oldbw = c->bw;
+			c->bw = currentconfig->appearance.borderpx;
+			XSetWindowBorder(dpy, c->w, scheme[SchemeNorm][ColBorder].pixel);
+			configure(c);
+			updatesizehints(c);
+			updatewmhints(c);
+			XMoveResizeWindow(dpy, c->win, c->x + 2 * sw, c->y, c->w, c->h); /* some windows require this */
+		}
+		arrange(m);
+	}
+
+	focus(NULL);
+}
+
 int
 main(int argc, char *argv[])
 {
+	char defaultpath[256];
+	configpath = getenv("DWM_CONFIG_PATH");
+	if(!configpath) {
+		snprintf(defaultpath, sizeof(defaultpath), "%s/.config/dwm/config", getenv("HOME"));
+		configpath = defaultpath; // i am aware, we don't need to care about it (for now)
+	}
+
 	if (argc == 2 && !strcmp("-v", argv[1]))
 		die("dwm-"VERSION);
 	else if (argc != 1)
@@ -1988,6 +2033,7 @@ main(int argc, char *argv[])
 	if (!(dpy = XOpenDisplay(NULL)))
 		die("dwm: cannot open display");
 	checkotherwm();
+	loadconfig(configpath);
 	setup();
 #ifdef __OpenBSD__
 	if (pledge("stdio rpath proc exec", NULL) == -1)
