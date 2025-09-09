@@ -83,7 +83,7 @@ static void (*handler[LASTEvent]) (XEvent *) = {
 	[UnmapNotify] = unmapnotify
 };
 static Atom wmatom[WMLast], netatom[NetLast];
-static int running = 1;
+static int running = 1, repeat = 0;
 static Cur *cursor[CurLast];
 static Clr **scheme;
 static Display *dpy;
@@ -1976,6 +1976,13 @@ zoom(const Arg *arg)
 	pop(c);
 }
 
+void
+restart(const Arg *arg)
+{
+	running = 0;
+	repeat = 1;
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -1988,14 +1995,18 @@ main(int argc, char *argv[])
 	if (!(dpy = XOpenDisplay(NULL)))
 		die("dwm: cannot open display");
 	checkotherwm();
-	setup();
+	do {
+		running = 1;
+		repeat = 0;
+		setup();
 #ifdef __OpenBSD__
-	if (pledge("stdio rpath proc exec", NULL) == -1)
-		die("pledge");
+		if (pledge("stdio rpath proc exec", NULL) == -1)
+			die("pledge");
 #endif /* __OpenBSD__ */
-	scan();
-	run();
-	cleanup();
+		scan();
+		run();
+		cleanup();
+	} while(repeat);
 	XCloseDisplay(dpy);
 	return EXIT_SUCCESS;
 }
