@@ -3,7 +3,7 @@
 
 include config.mk
 
-SRC = drw.c dwm.c util.c config.c
+SRC = drw.c dwm.c util.c config.c parse_key.c
 OBJ = ${SRC:.c=.o}
 
 all: dwm parse_key_test

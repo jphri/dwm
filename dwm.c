@@ -1487,7 +1487,7 @@ spawn(const Arg *arg)
 		sa.sa_handler = SIG_DFL;
 		sigaction(SIGCHLD, &sa, NULL);
 
-		execvp(((char **)arg->v)[0], (char **)arg->v);
+		execl("/bin/sh", "/bin/sh", "-c", arg->v, NULL);
 		die("dwm: execvp '%s' failed:", ((char **)arg->v)[0]);
 	}
 }
@@ -1998,6 +1998,7 @@ main(int argc, char *argv[])
 	do {
 		running = 1;
 		repeat = 0;
+		loadconfig("test.conf");
 		setup();
 #ifdef __OpenBSD__
 		if (pledge("stdio rpath proc exec", NULL) == -1)
