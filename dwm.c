@@ -2000,6 +2000,8 @@ restart(const Arg *arg)
 
 	for (m = mons; m; m = m->next) {
 		for (c = m->clients; c; c = c->next) {
+			c->oldbw = c->bw;
+			c->bw = currentconfig->appearance.borderpx;
 			XSetWindowBorder(dpy, c->w, scheme[SchemeNorm][ColBorder].pixel);
 			configure(c);
 			updatesizehints(c);
