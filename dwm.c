@@ -90,6 +90,7 @@ static Display *dpy;
 static Drw *drw;
 static Monitor *mons, *selmon;
 static Window root, wmcheckwin;
+static const char *configpath;
 
 /* function implementations */
 void
@@ -1979,18 +1980,46 @@ zoom(const Arg *arg)
 void
 restart(const Arg *arg)
 {
-	running = 0;
-	repeat = 1;
+	loadconfig(configpath);
+	free(drw);
+
+	drw = drw_create(dpy, screen, root, sw, sh);
+	if (!drw_fontset_create(drw, currentconfig->appearance.fonts, currentconfig->appearance.fontscount))
+		die("no fonts could be loaded.");
+
+	free(scheme);
+	scheme = ecalloc(LASTScheme, sizeof(Clr *));
+	for (int i = 0; i < LASTScheme; i++)
+		scheme[i] = drw_scm_create(drw, currentconfig->appearance.colors[i], 3);
+
+	updatebars();
+	updatestatus();
+
+	Client *c;
+	Monitor *m;
+
+	for (m = mons; m; m = m->next) {
+		for (c = m->clients; c; c = c->next) {
+			XSetWindowBorder(dpy, c->w, scheme[SchemeNorm][ColBorder].pixel);
+			configure(c);
+			updatesizehints(c);
+			updatewmhints(c);
+			XMoveResizeWindow(dpy, c->win, c->x + 2 * sw, c->y, c->w, c->h); /* some windows require this */
+		}
+		arrange(m);
+	}
+
+	focus(NULL);
 }
 
 int
 main(int argc, char *argv[])
 {
 	char defaultpath[256];
-	const char *configpath = getenv("DWM_CONFIG_PATH");
+	configpath = getenv("DWM_CONFIG_PATH");
 	if(!configpath) {
 		snprintf(defaultpath, sizeof(defaultpath), "%s/.config/dwm/config", getenv("HOME"));
-		configpath = defaultpath;
+		configpath = defaultpath; // i am aware, we don't need to care about it (for now)
 	}
 
 	if (argc == 2 && !strcmp("-v", argv[1]))
@@ -2002,19 +2031,15 @@ main(int argc, char *argv[])
 	if (!(dpy = XOpenDisplay(NULL)))
 		die("dwm: cannot open display");
 	checkotherwm();
-	do {
-		running = 1;
-		repeat = 0;
-		loadconfig(configpath);
-		setup();
+	loadconfig(configpath);
+	setup();
 #ifdef __OpenBSD__
-		if (pledge("stdio rpath proc exec", NULL) == -1)
-			die("pledge");
+	if (pledge("stdio rpath proc exec", NULL) == -1)
+		die("pledge");
 #endif /* __OpenBSD__ */
-		scan();
-		run();
-		cleanup();
-	} while(repeat);
+	scan();
+	run();
+	cleanup();
 	XCloseDisplay(dpy);
 	return EXIT_SUCCESS;
 }
