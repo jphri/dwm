@@ -107,6 +107,7 @@ loadconfig(const char *path)
 		CFG_SEC("rule", rule_opts, CFGF_MULTI),
 		CFG_SEC("key", keys_opts, CFGF_MULTI),
 		CFG_SEC("button", button_opts, CFGF_MULTI),
+		CFG_FUNC("include", &cfg_include),
 		CFG_END(),
 	};
 
