@@ -80,6 +80,7 @@ int updategeom(void);
 void updatenumlockmask(void);
 void updatesizehints(Client *c);
 void updatestatus(void);
+void updatetags(void);
 void updatetitle(Client *c);
 void updatewindowtype(Client *c);
 void updatewmhints(Client *c);

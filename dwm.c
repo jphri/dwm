@@ -82,14 +82,14 @@ static void (*handler[LASTEvent]) (XEvent *) = {
 	[PropertyNotify] = propertynotify,
 	[UnmapNotify] = unmapnotify
 };
-static Atom wmatom[WMLast], netatom[NetLast];
+Atom wmatom[WMLast], netatom[NetLast], dwmatom[DwmLast];
 static int running = 1, repeat = 0;
 static Cur *cursor[CurLast];
 static Clr **scheme;
-static Display *dpy;
+Display *dpy;
 static Drw *drw;
-static Monitor *mons, *selmon;
-static Window root, wmcheckwin;
+Monitor *mons, *selmon;
+Window root, wmcheckwin;
 static const char *configpath;
 
 /* function implementations */
@@ -1408,6 +1408,7 @@ setup(void)
 	netatom[NetWMWindowType] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", False);
 	netatom[NetWMWindowTypeDialog] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DIALOG", False);
 	netatom[NetClientList] = XInternAtom(dpy, "_NET_CLIENT_LIST", False);
+	dwmatom[DwmTags] = XInternAtom(dpy, "_DWM_TAGS", False);
 	/* init cursors */
 	cursor[CurNormal] = drw_cur_create(drw, XC_left_ptr);
 	cursor[CurResize] = drw_cur_create(drw, XC_sizing);
@@ -1419,6 +1420,7 @@ setup(void)
 	/* init bars */
 	updatebars();
 	updatestatus();
+	updatetags();
 	/* supporting window for NetWMCheck */
 	wmcheckwin = XCreateSimpleWindow(dpy, root, 0, 0, 1, 1, 0, 0, 0);
 	XChangeProperty(dpy, wmcheckwin, netatom[NetWMCheck], XA_WINDOW, 32,
@@ -1500,6 +1502,7 @@ tag(const Arg *arg)
 		selmon->sel->tags = arg->ui & TAGMASK;
 		focus(NULL);
 		arrange(selmon);
+		updatetags();
 	}
 }
 
@@ -1584,6 +1587,7 @@ toggletag(const Arg *arg)
 		selmon->sel->tags = newtags;
 		focus(NULL);
 		arrange(selmon);
+		updatetags();
 	}
 }
 
@@ -1596,6 +1600,7 @@ toggleview(const Arg *arg)
 		selmon->tagset[selmon->seltags] = newtagset;
 		focus(NULL);
 		arrange(selmon);
+		updatetags();
 	}
 }
 
@@ -1897,6 +1902,7 @@ view(const Arg *arg)
 		selmon->tagset[selmon->seltags] = arg->ui & TAGMASK;
 	focus(NULL);
 	arrange(selmon);
+	updatetags();
 }
 
 Client *
