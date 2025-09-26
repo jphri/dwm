@@ -32,9 +32,9 @@ static Arg ploadarg(cfg_t *cfg);
 /* layout(s) */
 const Layout layouts[] = {
 	/* symbol     arrange function */
-	{ "[]=",      tile },    /* first entry is default */
-	{ "><>",      NULL },    /* no layout function means floating behavior */
-	{ "[M]",      monocle },
+	{ .symbol = "[]=", .name = "tile", .arrange = tile },    /* first entry is default */
+	{ .symbol = "><>", .name = "floating", .arrange = NULL },    /* no layout function means floating behavior */
+	{ .symbol = "[M]", .name = "monocle", .arrange = monocle },
 };
 int layoutscount = LENGTH(layouts);
 

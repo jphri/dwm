@@ -7,7 +7,7 @@ enum { SchemeNorm, SchemeSel, LASTScheme }; /* color schemes */
 enum { NetSupported, NetWMName, NetWMState, NetWMCheck,
        NetWMFullscreen, NetActiveWindow, NetWMWindowType,
        NetWMWindowTypeDialog, NetClientList, NetLast }; /* EWMH atoms */
-enum { DwmTags, DwmLast };
+enum { DwmTags, DwmLayout, DwmLast };
 enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast }; /* default atoms */
 enum { ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle,
        ClkClientWin, ClkRootWin, ClkLast }; /* clicks */
@@ -53,6 +53,7 @@ typedef struct {
 
 typedef struct {
 	const char *symbol;
+	const char *name;
 	void (*arrange)(Monitor *);
 } Layout;
 

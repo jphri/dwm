@@ -81,6 +81,7 @@ void updatenumlockmask(void);
 void updatesizehints(Client *c);
 void updatestatus(void);
 void updatetags(void);
+void updatelayout(void);
 void updatetitle(Client *c);
 void updatewindowtype(Client *c);
 void updatewmhints(Client *c);
@@ -93,3 +94,4 @@ int xerrorstart(Display *dpy, XErrorEvent *ee);
 void zoom(const Arg *arg);
 void restart(const Arg *arg);
 void loadconfig(const char *path);
+

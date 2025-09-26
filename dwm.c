@@ -1348,6 +1348,7 @@ setlayout(const Arg *arg)
 		arrange(selmon);
 	else
 		drawbar(selmon);
+	updatelayout();
 }
 
 /* arg > 1.0 will set mfact absolutely */
@@ -1409,6 +1410,7 @@ setup(void)
 	netatom[NetWMWindowTypeDialog] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DIALOG", False);
 	netatom[NetClientList] = XInternAtom(dpy, "_NET_CLIENT_LIST", False);
 	dwmatom[DwmTags] = XInternAtom(dpy, "_DWM_TAGS", False);
+	dwmatom[DwmLayout] = XInternAtom(dpy, "_DWM_LAYOUT", False);
 	/* init cursors */
 	cursor[CurNormal] = drw_cur_create(drw, XC_left_ptr);
 	cursor[CurResize] = drw_cur_create(drw, XC_sizing);
@@ -1421,6 +1423,7 @@ setup(void)
 	updatebars();
 	updatestatus();
 	updatetags();
+	updatelayout();
 	/* supporting window for NetWMCheck */
 	wmcheckwin = XCreateSimpleWindow(dpy, root, 0, 0, 1, 1, 0, 0, 0);
 	XChangeProperty(dpy, wmcheckwin, netatom[NetWMCheck], XA_WINDOW, 32,
