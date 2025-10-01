@@ -93,5 +93,5 @@ int xerrordummy(Display *dpy, XErrorEvent *ee);
 int xerrorstart(Display *dpy, XErrorEvent *ee);
 void zoom(const Arg *arg);
 void restart(const Arg *arg);
+void movestack(const Arg *arg);
 void loadconfig(const char *path);
-

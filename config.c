@@ -285,6 +285,7 @@ parsefunc(cfg_t *cfg, cfg_opt_t *opt, const char *value, void *result)
 		FN(resizemouse),
 		FN(quit),
 		FN(restart),
+		FN(movestack),
 #undef FN
 	};
 
