@@ -90,7 +90,6 @@ Display *dpy;
 static Drw *drw;
 Monitor *mons, *selmon;
 Window root, wmcheckwin;
-static const char *configpath;
 
 /* function implementations */
 void
@@ -1989,7 +1988,7 @@ zoom(const Arg *arg)
 void
 restart(const Arg *arg)
 {
-	loadconfig(configpath);
+	loadconfigfile();
 	free(drw);
 
 	drw = drw_create(dpy, screen, root, sw, sh);
@@ -2026,13 +2025,6 @@ restart(const Arg *arg)
 int
 main(int argc, char *argv[])
 {
-	char defaultpath[256];
-	configpath = getenv("DWM_CONFIG_PATH");
-	if(!configpath) {
-		snprintf(defaultpath, sizeof(defaultpath), "%s/.config/dwm/config", getenv("HOME"));
-		configpath = defaultpath; // i am aware, we don't need to care about it (for now)
-	}
-
 	if (argc == 2 && !strcmp("-v", argv[1]))
 		die("dwm-"VERSION);
 	else if (argc != 1)
@@ -2042,7 +2034,7 @@ main(int argc, char *argv[])
 	if (!(dpy = XOpenDisplay(NULL)))
 		die("dwm: cannot open display");
 	checkotherwm();
-	loadconfig(configpath);
+	loadconfigfile();
 	setup();
 #ifdef __OpenBSD__
 	if (pledge("stdio rpath proc exec", NULL) == -1)

@@ -388,3 +388,23 @@ freebutton(void *ptr)
 {
 	free(ptr);
 }
+
+void
+loadconfigfile()
+{
+	char defaultpath[256];
+	char *path;
+
+	if(path = getenv("DWM_CONFIG_PATH"), path != NULL) {
+		snprintf(defaultpath, sizeof(defaultpath) - 1, "%s", path);
+	} else if(path = getenv("XDG_CONFIG_HOME"), path != NULL) {
+		snprintf(defaultpath, sizeof(defaultpath) - 1, "%s/dwm/config", path);
+	} else if(path = getenv("HOME"), path != NULL) {
+		snprintf(defaultpath, sizeof(defaultpath) - 1, "%s/.config/dwm/config", path);
+	} else {
+		fprintf(stderr, "No config file found!");
+		abort();
+	}
+
+	loadconfig(defaultpath);
+}
