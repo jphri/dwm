@@ -3,20 +3,20 @@
 
 include config.mk
 
-SRC = drw.c dwm.c util.c config.c parse_key.c tags.c layout.c movestack.c main.c
+SRC = src/drw.c src/dwm.c src/util.c src/config.c src/parse_key.c src/tags.c src/layout.c src/movestack.c src/main.c
 OBJ = ${SRC:.c=.o}
 
 all: dwm parse_key_test
 
 .c.o:
-	${CC} -c ${CFLAGS} $<
+	${CC} -c ${CFLAGS} $< -o $@
 
 ${OBJ}: config.mk
 
 dwm: ${OBJ}
 	${CC} -o $@ ${OBJ} ${LDFLAGS}
 
-parse_key_test: parse_key.o parse_key_test.o
+parse_key_test: src/parse_key.o src/parse_key_test.o
 	${CC} -o $@ $^ ${LDFLAGS}
 
 clean:
