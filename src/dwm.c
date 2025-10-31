@@ -18,7 +18,7 @@
  *
  * Keys and tagging rules are organized as arrays and defined in config.h.
  *
- * To understand everything else, start reading main().
+ * To understand everything else, start reading main.c.
  */
 #include <X11/X.h>
 #include <errno.h>
@@ -83,14 +83,13 @@ static void (*handler[LASTEvent]) (XEvent *) = {
 	[UnmapNotify] = unmapnotify
 };
 Atom wmatom[WMLast], netatom[NetLast], dwmatom[DwmLast];
-static int running = 1, repeat = 0;
+static int running = 1;
 static Cur *cursor[CurLast];
 static Clr **scheme;
 Display *dpy;
 static Drw *drw;
 Monitor *mons, *selmon;
 Window root, wmcheckwin;
-static const char *configpath;
 
 /* function implementations */
 void
@@ -1989,7 +1988,7 @@ zoom(const Arg *arg)
 void
 restart(const Arg *arg)
 {
-	loadconfig(configpath);
+	loadconfigfile();
 	free(drw);
 
 	drw = drw_create(dpy, screen, root, sw, sh);
@@ -2023,34 +2022,3 @@ restart(const Arg *arg)
 	focus(NULL);
 }
 
-int
-main(int argc, char *argv[])
-{
-	char defaultpath[256];
-	configpath = getenv("DWM_CONFIG_PATH");
-	if(!configpath) {
-		snprintf(defaultpath, sizeof(defaultpath), "%s/.config/dwm/config", getenv("HOME"));
-		configpath = defaultpath; // i am aware, we don't need to care about it (for now)
-	}
-
-	if (argc == 2 && !strcmp("-v", argv[1]))
-		die("dwm-"VERSION);
-	else if (argc != 1)
-		die("usage: dwm [-v]");
-	if (!setlocale(LC_CTYPE, "") || !XSupportsLocale())
-		fputs("warning: no locale support\n", stderr);
-	if (!(dpy = XOpenDisplay(NULL)))
-		die("dwm: cannot open display");
-	checkotherwm();
-	loadconfig(configpath);
-	setup();
-#ifdef __OpenBSD__
-	if (pledge("stdio rpath proc exec", NULL) == -1)
-		die("pledge");
-#endif /* __OpenBSD__ */
-	scan();
-	run();
-	cleanup();
-	XCloseDisplay(dpy);
-	return EXIT_SUCCESS;
-}

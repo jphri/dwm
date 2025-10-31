@@ -3,26 +3,34 @@
 
 include config.mk
 
-SRC = drw.c dwm.c util.c config.c parse_key.c tags.c layout.c movestack.c
-OBJ = ${SRC:.c=.o}
+OBJ   = src/drw.o src/dwm.o src/util.o src/config.o src/parse_key.o src/tags.o src/layout.o src/movestack.o
+ENTRY = src/main.o
 
-all: dwm parse_key_test
+TESTS=\
+	test_parse_buttonsymbol\
+	test_parse_keysymbol
+
+all: dwm ${TESTS}
+
+test: ${TESTS}
+	for f in ${TESTS}; do \
+		./"$$f" ;\
+	done
 
 .c.o:
-	${CC} -c ${CFLAGS} $<
+	${CC} -c ${CFLAGS} $< -o $@
 
 ${OBJ}: config.mk
 
-dwm: ${OBJ}
-	${CC} -o $@ ${OBJ} ${LDFLAGS}
+dwm: ${OBJ} ${ENTRY}
+	${CC} -o $@ $^ ${LDFLAGS}
 
-parse_key_test: parse_key.o parse_key_test.o
+test_%: src/test_%.c ${OBJ}
 	${CC} -o $@ $^ ${LDFLAGS}
 
 clean:
-	rm -f dwm ${OBJ} dwm-${VERSION}.tar.gz
-	rm -f parse_key.o parse_key_test.o
-	rm -f parse_key_test
+	rm -f ${TESTS}
+	rm -f dwm ${OBJ} ${ENTRY} dwm-${VERSION}.tar.gz
 
 dist: clean
 	mkdir -p dwm-${VERSION}
@@ -44,4 +52,4 @@ uninstall:
 	rm -f ${DESTDIR}${PREFIX}/bin/dwm\
 		${DESTDIR}${MANPREFIX}/man1/dwm.1
 
-.PHONY: all clean dist install uninstall
+.PHONY: all clean dist install uninstall test

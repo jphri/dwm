@@ -38,6 +38,34 @@ const Layout layouts[] = {
 };
 int layoutscount = LENGTH(layouts);
 
+static struct {
+	const char *name;
+	void (*fn)(const Arg *);
+} funcs[] = {
+#define FN(name) { #name, name }
+	FN(spawn),
+	FN(togglebar),
+	FN(focusstack),
+	FN(incnmaster),
+	FN(setmfact),
+	FN(zoom),
+	FN(view),
+	FN(killclient),
+	FN(setlayout),
+	FN(togglefloating),
+	FN(tag),
+	FN(focusmon),
+	FN(tagmon),
+	FN(toggleview),
+	FN(toggletag),
+	FN(movemouse),
+	FN(resizemouse),
+	FN(quit),
+	FN(restart),
+	FN(movestack),
+#undef FN
+};
+
 Config *currentconfig = NULL;
 
 void
@@ -83,7 +111,7 @@ loadconfig(const char *path)
 	};
 	static cfg_opt_t keys_opts[] = {
 		CFG_PTR_CB("bind", NULL, CFGF_NODEFAULT, parsekey, freekey),
-		CFG_PTR_CB("func", NULL, CFGF_NODEFAULT, parsefunc, NULL), 
+		CFG_INT_CB("func", 0, CFGF_NODEFAULT, parsefunc), 
 		CFG_STR("cmd", NULL, CFGF_NODEFAULT),
 		CFG_INT("i", 0, CFGF_NODEFAULT), 
 		CFG_FLOAT("f", 0.0, CFGF_NODEFAULT),
@@ -93,7 +121,7 @@ loadconfig(const char *path)
 	static cfg_opt_t button_opts[] = {
 		CFG_PTR_CB("bind", NULL, CFGF_NODEFAULT, parsebutton, freebutton),
 		CFG_INT_CB("where", 0, CFGF_NODEFAULT, parsewhere),
-		CFG_PTR_CB("func", NULL, CFGF_NODEFAULT, parsefunc, NULL), 
+		CFG_INT_CB("func", 0, CFGF_NODEFAULT, parsefunc), 
 		CFG_STR("cmd", NULL, CFGF_NODEFAULT),
 		CFG_INT("i", 0, CFGF_NODEFAULT), 
 		CFG_FLOAT("f", 0.0, CFGF_NODEFAULT),
@@ -112,7 +140,6 @@ loadconfig(const char *path)
 	};
 
 	static cfg_t *cfg = NULL;
-
 	if(cfg) {
 		cfg_free(cfg);
 		cfg = NULL;
@@ -229,7 +256,7 @@ loadkeys(cfg_t *sec)
 		k->keysym = ks->sym;
 		k->mod    = ks->mod;
 
-		k->func = (void(*)(const Arg*))cfg_getptr(ksec, "func");
+		k->func = funcs[cfg_getint(ksec, "func")].fn;
 		k->arg  = ploadarg(ksec);
 	}
 }
@@ -253,7 +280,7 @@ loadbuttons(cfg_t *sec)
 		b->button = bs->button;
 		b->mask   = bs->mod;
 
-		b->func = (void(*)(const Arg*))cfg_getptr(ksec, "func");
+		b->func = funcs[cfg_getint(ksec, "func")].fn;
 		b->arg  = ploadarg(ksec);
 	}
 }
@@ -261,42 +288,12 @@ loadbuttons(cfg_t *sec)
 int 
 parsefunc(cfg_t *cfg, cfg_opt_t *opt, const char *value, void *result)
 {
-	static struct {
-		const char *name;
-		void (*fn)(const Arg *);
-	} funcs[] = {
-#define FN(name) { #name, name }
-		FN(spawn),
-		FN(togglebar),
-		FN(focusstack),
-		FN(incnmaster),
-		FN(setmfact),
-		FN(zoom),
-		FN(view),
-		FN(killclient),
-		FN(setlayout),
-		FN(togglefloating),
-		FN(tag),
-		FN(focusmon),
-		FN(tagmon),
-		FN(toggleview),
-		FN(toggletag),
-		FN(movemouse),
-		FN(resizemouse),
-		FN(quit),
-		FN(restart),
-		FN(movestack),
-#undef FN
-	};
-
 	for(int i = 0; i < LENGTH(funcs); i++) {
 		if(strcmp(funcs[i].name, value) == 0) {
-			*(void**)result = (void*)funcs[i].fn;
+			*(long int*)result = i;
 			return 0;
 		}
 	}
-
-	result = NULL;
 	return 1;
 }
 
@@ -387,4 +384,24 @@ void
 freebutton(void *ptr)
 {
 	free(ptr);
+}
+
+void
+loadconfigfile()
+{
+	char defaultpath[256];
+	char *path;
+
+	if(path = getenv("DWM_CONFIG_PATH"), path != NULL) {
+		snprintf(defaultpath, sizeof(defaultpath) - 1, "%s", path);
+	} else if(path = getenv("XDG_CONFIG_HOME"), path != NULL) {
+		snprintf(defaultpath, sizeof(defaultpath) - 1, "%s/dwm/config", path);
+	} else if(path = getenv("HOME"), path != NULL) {
+		snprintf(defaultpath, sizeof(defaultpath) - 1, "%s/.config/dwm/config", path);
+	} else {
+		fprintf(stderr, "No config file found!");
+		abort();
+	}
+
+	loadconfig(defaultpath);
 }
