@@ -1,13 +1,13 @@
-#include <X11/keysym.h>
 #include <X11/Xlib.h>
+#include <X11/keysym.h>
+#include <confuse.h>
 #include <stdlib.h>
 #include <string.h>
-#include <confuse.h>
 
-#include "util.h"
 #include "dat.h"
 #include "fns.h"
 #include "keys.h"
+#include "util.h"
 
 static int parsefunc(cfg_t *, cfg_opt_t *, const char *, void *);
 static int parselayout(cfg_t *, cfg_opt_t *, const char *, void *);
@@ -32,8 +32,12 @@ static Arg ploadarg(cfg_t *cfg);
 /* layout(s) */
 const Layout layouts[] = {
 	/* symbol     arrange function */
-	{ .symbol = "[]=", .name = "tile", .arrange = tile },    /* first entry is default */
-	{ .symbol = "><>", .name = "floating", .arrange = NULL },    /* no layout function means floating behavior */
+	{ .symbol = "[]=",
+	  .name = "tile",
+	  .arrange = tile }, /* first entry is default */
+	{ .symbol = "><>",
+	  .name = "floating",
+	  .arrange = NULL }, /* no layout function means floating behavior */
 	{ .symbol = "[M]", .name = "monocle", .arrange = monocle },
 };
 int layoutscount = LENGTH(layouts);
@@ -42,27 +46,13 @@ static struct {
 	const char *name;
 	void (*fn)(const Arg *);
 } funcs[] = {
+
 #define FN(name) { #name, name }
-	FN(spawn),
-	FN(togglebar),
-	FN(focusstack),
-	FN(incnmaster),
-	FN(setmfact),
-	FN(zoom),
-	FN(view),
-	FN(killclient),
-	FN(setlayout),
-	FN(togglefloating),
-	FN(tag),
-	FN(focusmon),
-	FN(tagmon),
-	FN(toggleview),
-	FN(toggletag),
-	FN(movemouse),
-	FN(resizemouse),
-	FN(quit),
-	FN(restart),
-	FN(movestack),
+	FN(spawn),       FN(togglebar),      FN(focusstack), FN(incnmaster),
+	FN(setmfact),    FN(zoom),           FN(view),       FN(killclient),
+	FN(setlayout),   FN(togglefloating), FN(tag),        FN(focusmon),
+	FN(tagmon),      FN(toggleview),     FN(toggletag),  FN(movemouse),
+	FN(resizemouse), FN(quit),           FN(restart),    FN(movestack),
 #undef FN
 };
 
@@ -111,19 +101,20 @@ loadconfig(const char *path)
 	};
 	static cfg_opt_t keys_opts[] = {
 		CFG_PTR_CB("bind", NULL, CFGF_NODEFAULT, parsekey, freekey),
-		CFG_INT_CB("func", 0, CFGF_NODEFAULT, parsefunc), 
+		CFG_INT_CB("func", 0, CFGF_NODEFAULT, parsefunc),
 		CFG_STR("cmd", NULL, CFGF_NODEFAULT),
-		CFG_INT("i", 0, CFGF_NODEFAULT), 
+		CFG_INT("i", 0, CFGF_NODEFAULT),
 		CFG_FLOAT("f", 0.0, CFGF_NODEFAULT),
 		CFG_PTR_CB("layout", NULL, CFGF_NODEFAULT, parselayout, NULL),
 		CFG_END(),
 	};
 	static cfg_opt_t button_opts[] = {
-		CFG_PTR_CB("bind", NULL, CFGF_NODEFAULT, parsebutton, freebutton),
+		CFG_PTR_CB("bind", NULL, CFGF_NODEFAULT, parsebutton,
+		           freebutton),
 		CFG_INT_CB("where", 0, CFGF_NODEFAULT, parsewhere),
-		CFG_INT_CB("func", 0, CFGF_NODEFAULT, parsefunc), 
+		CFG_INT_CB("func", 0, CFGF_NODEFAULT, parsefunc),
 		CFG_STR("cmd", NULL, CFGF_NODEFAULT),
-		CFG_INT("i", 0, CFGF_NODEFAULT), 
+		CFG_INT("i", 0, CFGF_NODEFAULT),
 		CFG_FLOAT("f", 0.0, CFGF_NODEFAULT),
 		CFG_PTR_CB("layout", NULL, CFGF_NODEFAULT, parselayout, NULL),
 		CFG_END(),
@@ -140,18 +131,18 @@ loadconfig(const char *path)
 	};
 
 	static cfg_t *cfg = NULL;
-	if(cfg) {
+	if (cfg) {
 		cfg_free(cfg);
 		cfg = NULL;
 	}
 
 	cfg = cfg_init(config_opts, CFGF_NONE);
-	if(!cfg || cfg_parse(cfg, path) == CFG_PARSE_ERROR) {
+	if (!cfg || cfg_parse(cfg, path) == CFG_PARSE_ERROR) {
 		perror("cfg_parse");
 		return;
 	}
 
-	if(currentconfig) {
+	if (currentconfig) {
 		free(currentconfig->appearance.fonts);
 		free(currentconfig->tags);
 		free(currentconfig->rules);
@@ -172,45 +163,56 @@ void
 loadappearance(cfg_t *sec)
 {
 	currentconfig->appearance.borderpx = cfg_getint(sec, "borderpx");
-	currentconfig->appearance.snap     = cfg_getint(sec, "snap");
-	currentconfig->appearance.showbar  = cfg_getbool(sec, "showbar");
-	currentconfig->appearance.topbar   = cfg_getbool(sec, "topbar");
-	currentconfig->appearance.gappx    = cfg_getint(sec, "gappx");
+	currentconfig->appearance.snap = cfg_getint(sec, "snap");
+	currentconfig->appearance.showbar = cfg_getbool(sec, "showbar");
+	currentconfig->appearance.topbar = cfg_getbool(sec, "topbar");
+	currentconfig->appearance.gappx = cfg_getint(sec, "gappx");
 	currentconfig->appearance.fontscount = cfg_size(sec, "fonts");
-	currentconfig->appearance.fonts = ecalloc(currentconfig->appearance.fontscount, sizeof(currentconfig->appearance.fonts));
+	currentconfig->appearance.fonts =
+		ecalloc(currentconfig->appearance.fontscount,
+	                sizeof(currentconfig->appearance.fonts));
 
-	for(int i = 0; i < currentconfig->appearance.fontscount; i++) {
-		currentconfig->appearance.fonts[i] = cfg_getnstr(sec, "fonts", i);
+	for (int i = 0; i < currentconfig->appearance.fontscount; i++) {
+		currentconfig->appearance.fonts[i] =
+			cfg_getnstr(sec, "fonts", i);
 	}
 
 	cfg_t *colors = cfg_getsec(sec, "colors");
-	
-	currentconfig->appearance.colors[SchemeSel][0] = cfg_getstr(cfg_getsec(colors, "selected"), "fg");
-	currentconfig->appearance.colors[SchemeSel][1] = cfg_getstr(cfg_getsec(colors, "selected"), "bg");
-	currentconfig->appearance.colors[SchemeSel][2] = cfg_getstr(cfg_getsec(colors, "selected"), "border");
 
-	currentconfig->appearance.colors[SchemeNorm][0] = cfg_getstr(cfg_getsec(colors, "normal"), "fg");
-	currentconfig->appearance.colors[SchemeNorm][1] = cfg_getstr(cfg_getsec(colors, "normal"), "bg");
-	currentconfig->appearance.colors[SchemeNorm][2] = cfg_getstr(cfg_getsec(colors, "normal"), "border");
+	currentconfig->appearance.colors[SchemeSel][0] =
+		cfg_getstr(cfg_getsec(colors, "selected"), "fg");
+	currentconfig->appearance.colors[SchemeSel][1] =
+		cfg_getstr(cfg_getsec(colors, "selected"), "bg");
+	currentconfig->appearance.colors[SchemeSel][2] =
+		cfg_getstr(cfg_getsec(colors, "selected"), "border");
+
+	currentconfig->appearance.colors[SchemeNorm][0] =
+		cfg_getstr(cfg_getsec(colors, "normal"), "fg");
+	currentconfig->appearance.colors[SchemeNorm][1] =
+		cfg_getstr(cfg_getsec(colors, "normal"), "bg");
+	currentconfig->appearance.colors[SchemeNorm][2] =
+		cfg_getstr(cfg_getsec(colors, "normal"), "border");
 }
 
 void
 loadlayout(cfg_t *sec)
 {
-	currentconfig->lsettings.mfact          = cfg_getfloat(sec, "mfact");
-	currentconfig->lsettings.nmaster        = cfg_getint(sec, "nmaster");
-	currentconfig->lsettings.resizehints    = cfg_getbool(sec, "resizehints");
-	currentconfig->lsettings.lockfullscreen = cfg_getbool(sec, "lockfullscreen");
-	currentconfig->lsettings.refreshrate    = cfg_getint(sec, "refreshrate");
+	currentconfig->lsettings.mfact = cfg_getfloat(sec, "mfact");
+	currentconfig->lsettings.nmaster = cfg_getint(sec, "nmaster");
+	currentconfig->lsettings.resizehints = cfg_getbool(sec, "resizehints");
+	currentconfig->lsettings.lockfullscreen =
+		cfg_getbool(sec, "lockfullscreen");
+	currentconfig->lsettings.refreshrate = cfg_getint(sec, "refreshrate");
 }
 
 void
 loadtags(cfg_t *sec)
 {
 	currentconfig->tagscount = cfg_size(sec, "tags");
-	currentconfig->tags      = ecalloc(currentconfig->tagscount, sizeof(currentconfig->tags[0]));
+	currentconfig->tags = ecalloc(currentconfig->tagscount,
+	                              sizeof(currentconfig->tags[0]));
 
-	for(int i = 0; i < currentconfig->tagscount; i++) {
+	for (int i = 0; i < currentconfig->tagscount; i++) {
 		currentconfig->tags[i] = cfg_getnstr(sec, "tags", i);
 	}
 }
@@ -220,20 +222,22 @@ loadrules(cfg_t *sec)
 {
 	currentconfig->rules = NULL;
 	currentconfig->rulescount = cfg_size(sec, "rule");
-	if(currentconfig->rulescount == 0)
+	if (currentconfig->rulescount == 0) {
 		return;
+	}
 
-	currentconfig->rules = ecalloc(currentconfig->rulescount, sizeof(currentconfig->rules[0]));
-	for(int i = 0; i < currentconfig->rulescount; i++) {
+	currentconfig->rules = ecalloc(currentconfig->rulescount,
+	                               sizeof(currentconfig->rules[0]));
+	for (int i = 0; i < currentconfig->rulescount; i++) {
 		cfg_t *rsec = cfg_getnsec(sec, "rule", i);
-		
+
 		Rule *r = currentconfig->rules + i;
 		r->instance = cfg_getstr(rsec, "instance");
-		r->class    = cfg_getstr(rsec, "class");
-		r->title    = cfg_getstr(rsec, "title");
+		r->class = cfg_getstr(rsec, "class");
+		r->title = cfg_getstr(rsec, "title");
 
-		r->tags       = cfg_getint(rsec, "tagmask");
-		r->monitor    = cfg_getint(rsec, "monitor");
+		r->tags = cfg_getint(rsec, "tagmask");
+		r->monitor = cfg_getint(rsec, "monitor");
 		r->isfloating = cfg_getbool(rsec, "floating");
 	}
 }
@@ -243,21 +247,23 @@ loadkeys(cfg_t *sec)
 {
 	currentconfig->keys = NULL;
 	currentconfig->keyscount = cfg_size(sec, "key");
-	if(currentconfig->keyscount == 0)
+	if (currentconfig->keyscount == 0) {
 		return;
+	}
 
-	currentconfig->keys = ecalloc(currentconfig->keyscount, sizeof(currentconfig->keys[0]));
-	for(int i = 0; i < currentconfig->keyscount; i++) {
+	currentconfig->keys = ecalloc(currentconfig->keyscount,
+	                              sizeof(currentconfig->keys[0]));
+	for (int i = 0; i < currentconfig->keyscount; i++) {
 		Key *k = currentconfig->keys + i;
 
 		cfg_t *ksec = cfg_getnsec(sec, "key", i);
 		KeySymbol *ks = cfg_getptr(ksec, "bind");
 
 		k->keysym = ks->sym;
-		k->mod    = ks->mod;
+		k->mod = ks->mod;
 
 		k->func = funcs[cfg_getint(ksec, "func")].fn;
-		k->arg  = ploadarg(ksec);
+		k->arg = ploadarg(ksec);
 	}
 }
 
@@ -266,52 +272,54 @@ loadbuttons(cfg_t *sec)
 {
 	currentconfig->buttons = NULL;
 	currentconfig->buttonscount = cfg_size(sec, "button");
-	if(currentconfig->buttonscount == 0)
+	if (currentconfig->buttonscount == 0) {
 		return;
+	}
 
-	currentconfig->buttons = ecalloc(currentconfig->buttonscount, sizeof(currentconfig->buttons[0]));
-	for(int i = 0; i < currentconfig->buttonscount; i++) {
+	currentconfig->buttons = ecalloc(currentconfig->buttonscount,
+	                                 sizeof(currentconfig->buttons[0]));
+	for (int i = 0; i < currentconfig->buttonscount; i++) {
 		Button *b = currentconfig->buttons + i;
 
 		cfg_t *ksec = cfg_getnsec(sec, "button", i);
 		ButtonSymbol *bs = cfg_getptr(ksec, "bind");
 
-		b->click  = cfg_getint(ksec, "where");
+		b->click = cfg_getint(ksec, "where");
 		b->button = bs->button;
-		b->mask   = bs->mod;
+		b->mask = bs->mod;
 
 		b->func = funcs[cfg_getint(ksec, "func")].fn;
-		b->arg  = ploadarg(ksec);
+		b->arg = ploadarg(ksec);
 	}
 }
 
-int 
+int
 parsefunc(cfg_t *cfg, cfg_opt_t *opt, const char *value, void *result)
 {
-	for(int i = 0; i < LENGTH(funcs); i++) {
-		if(strcmp(funcs[i].name, value) == 0) {
-			*(long int*)result = i;
+	for (int i = 0; i < LENGTH(funcs); i++) {
+		if (strcmp(funcs[i].name, value) == 0) {
+			*(long int *)result = i;
 			return 0;
 		}
 	}
 	return 1;
 }
 
-int 
+int
 parselayout(cfg_t *cfg, cfg_opt_t *opt, const char *value, void *result)
 {
 	static struct {
 		const char *name;
 		const Layout *lt;
 	} lts[] = {
-		{ .name = "tile",     .lt = layouts + 0 },
+		{ .name = "tile", .lt = layouts + 0 },
 		{ .name = "floating", .lt = layouts + 1 },
-		{ .name = "monocle",  .lt = layouts + 2 },
+		{ .name = "monocle", .lt = layouts + 2 },
 	};
 
-	for(int i = 0; i < LENGTH(lts); i++) {
-		if(strcmp(lts[i].name, value) == 0) {
-			*(void**)result = (void*)lts[i].lt;
+	for (int i = 0; i < LENGTH(lts); i++) {
+		if (strcmp(lts[i].name, value) == 0) {
+			*(void **)result = (void *)lts[i].lt;
 			return 0;
 		}
 	}
@@ -323,58 +331,66 @@ parselayout(cfg_t *cfg, cfg_opt_t *opt, const char *value, void *result)
 Arg
 ploadarg(cfg_t *sec)
 {
-	Arg a = {0};
+	Arg a = { 0 };
 
-	if(cfg_size(sec, "cmd") > 0) a.v = cfg_getstr(sec, "cmd");
-	if(cfg_size(sec, "i") > 0) a.i = cfg_getint(sec, "i");
-	if(cfg_size(sec, "f") > 0) a.f = cfg_getfloat(sec, "f");
-	if(cfg_size(sec, "layout") > 0) a.v = cfg_getptr(sec, "layout");
+	if (cfg_size(sec, "cmd") > 0) {
+		a.v = cfg_getstr(sec, "cmd");
+	}
+	if (cfg_size(sec, "i") > 0) {
+		a.i = cfg_getint(sec, "i");
+	}
+	if (cfg_size(sec, "f") > 0) {
+		a.f = cfg_getfloat(sec, "f");
+	}
+	if (cfg_size(sec, "layout") > 0) {
+		a.v = cfg_getptr(sec, "layout");
+	}
 
 	return a;
 }
 
-int 
+int
 parsekey(cfg_t *cfg, cfg_opt_t *opt, const char *value, void *result)
 {
 	KeySymbol *ks = ecalloc(1, sizeof(*ks));
 	*ks = parse_keysymbol(value);
-	*(void**)result = ks;
+	*(void **)result = ks;
 	return ks->error;
 }
 
-int 
+int
 parsebutton(cfg_t *cfg, cfg_opt_t *opt, const char *value, void *result)
 {
 	ButtonSymbol *ks = ecalloc(1, sizeof(*ks));
 	*ks = parse_buttonsymbol(value);
-	*(void**)result = ks;
+	*(void **)result = ks;
 	return ks->error;
 }
 
-int 
+int
 parsewhere(cfg_t *cfg, cfg_opt_t *opt, const char *value, void *result)
 {
 	static struct {
 		const char *name;
-		int   click;
+		int click;
 	} lts[] = {
 		{ .name = "ltsymbol", .click = ClkLtSymbol },
 		{ .name = "wintitle", .click = ClkWinTitle },
-		{ .name = "window",  .click  = ClkClientWin },
-		{ .name = "tagbar",  .click  = ClkTagBar },
-		{ .name = "status",  .click  = ClkStatusText },
+		{ .name = "window", .click = ClkClientWin },
+		{ .name = "tagbar", .click = ClkTagBar },
+		{ .name = "status", .click = ClkStatusText },
 	};
 
-	for(int i = 0; i < LENGTH(lts); i++) {
-		if(strcmp(lts[i].name, value) == 0) {
-			*(long int*)result = lts[i].click;
+	for (int i = 0; i < LENGTH(lts); i++) {
+		if (strcmp(lts[i].name, value) == 0) {
+			*(long int *)result = lts[i].click;
 			return 0;
 		}
 	}
 	return 1;
 }
 
-void 
+void
 freekey(void *ptr)
 {
 	free(ptr);
@@ -392,12 +408,14 @@ loadconfigfile()
 	char defaultpath[256];
 	char *path;
 
-	if(path = getenv("DWM_CONFIG_PATH"), path != NULL) {
+	if (path = getenv("DWM_CONFIG_PATH"), path != NULL) {
 		snprintf(defaultpath, sizeof(defaultpath) - 1, "%s", path);
-	} else if(path = getenv("XDG_CONFIG_HOME"), path != NULL) {
-		snprintf(defaultpath, sizeof(defaultpath) - 1, "%s/dwm/config", path);
-	} else if(path = getenv("HOME"), path != NULL) {
-		snprintf(defaultpath, sizeof(defaultpath) - 1, "%s/.config/dwm/config", path);
+	} else if (path = getenv("XDG_CONFIG_HOME"), path != NULL) {
+		snprintf(defaultpath, sizeof(defaultpath) - 1, "%s/dwm/config",
+		         path);
+	} else if (path = getenv("HOME"), path != NULL) {
+		snprintf(defaultpath, sizeof(defaultpath) - 1,
+		         "%s/.config/dwm/config", path);
 	} else {
 		fprintf(stderr, "No config file found!");
 		abort();

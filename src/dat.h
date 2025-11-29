@@ -1,16 +1,56 @@
-#define WIDTH(X)                ((X)->w + 2 * (X)->bw)
-#define HEIGHT(X)               ((X)->h + 2 * (X)->bw)
-#define ISVISIBLE(C)            ((C->tags & C->mon->tagset[C->mon->seltags]))
+#define WIDTH(X)     ((X)->w + 2 * (X)->bw)
+#define HEIGHT(X)    ((X)->h + 2 * (X)->bw)
+#define ISVISIBLE(C) ((C->tags & C->mon->tagset[C->mon->seltags]))
 
-enum { CurNormal, CurResize, CurMove, CurLast }; /* cursor */
-enum { SchemeNorm, SchemeSel, LASTScheme }; /* color schemes */
-enum { NetSupported, NetWMName, NetWMState, NetWMCheck,
-       NetWMFullscreen, NetActiveWindow, NetWMWindowType,
-       NetWMWindowTypeDialog, NetClientList, NetLast }; /* EWMH atoms */
-enum { DwmTags, DwmLayout, DwmLast };
-enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast }; /* default atoms */
-enum { ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle,
-       ClkClientWin, ClkRootWin, ClkLast }; /* clicks */
+enum {
+	CurNormal,
+	CurResize,
+	CurMove,
+	CurLast
+}; /* cursor */
+
+enum {
+	SchemeNorm,
+	SchemeSel,
+	LASTScheme
+}; /* color schemes */
+
+enum {
+	NetSupported,
+	NetWMName,
+	NetWMState,
+	NetWMCheck,
+	NetWMFullscreen,
+	NetActiveWindow,
+	NetWMWindowType,
+	NetWMWindowTypeDialog,
+	NetClientList,
+	NetLast
+}; /* EWMH atoms */
+
+enum {
+	DwmTags,
+	DwmLayout,
+	DwmLast
+};
+
+enum {
+	WMProtocols,
+	WMDelete,
+	WMState,
+	WMTakeFocus,
+	WMLast
+}; /* default atoms */
+
+enum {
+	ClkTagBar,
+	ClkLtSymbol,
+	ClkStatusText,
+	ClkWinTitle,
+	ClkClientWin,
+	ClkRootWin,
+	ClkLast
+}; /* clicks */
 
 typedef union {
 	int i;
@@ -29,6 +69,7 @@ typedef struct {
 
 typedef struct Monitor Monitor;
 typedef struct Client Client;
+
 struct Client {
 	char name[256];
 	float mina, maxa;
@@ -62,9 +103,9 @@ struct Monitor {
 	float mfact;
 	int nmaster;
 	int num;
-	int by;               /* bar geometry */
-	int mx, my, mw, mh;   /* screen size */
-	int wx, wy, ww, wh;   /* window area  */
+	int by;             /* bar geometry */
+	int mx, my, mw, mh; /* screen size */
+	int wx, wy, ww, wh; /* window area  */
 	unsigned int seltags;
 	unsigned int sellt;
 	unsigned int tagset[2];
@@ -95,7 +136,7 @@ typedef struct {
 		int topbar;
 		unsigned int gappx;
 		const char **fonts;
-		int   fontscount;
+		int fontscount;
 		const char *colors[2][3];
 	} appearance;
 
@@ -108,21 +149,21 @@ typedef struct {
 	} lsettings;
 
 	char **tags;
-	int    tagscount;
+	int tagscount;
 
 	Rule *rules;
-	int   rulescount;
+	int rulescount;
 
 	Key *keys;
-	int  keyscount;
+	int keyscount;
 
 	Button *buttons;
-	int     buttonscount;
+	int buttonscount;
 } Config;
 
 extern Config *currentconfig;
-extern const Layout  layouts[];
-extern int     layoutscount;
+extern const Layout layouts[];
+extern int layoutscount;
 
 extern Monitor *mons, *selmon;
 extern Display *dpy;
