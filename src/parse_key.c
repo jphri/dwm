@@ -4,8 +4,10 @@
 #include <ctype.h>
 #include <string.h>
 
+#include <stdlib.h>
+
 #include "keys.h"
-#include "utils.h"
+#include "util.h"
 
 #define LENGTH(X) (sizeof(X) / sizeof(X)[0])
 
