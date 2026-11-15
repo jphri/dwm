@@ -2,13 +2,25 @@
 
 BEGIN {
 	ncollect = 0
+	ndep = 0
 }
 
 {
 	lnames[ncollect++] = $1;
+
+	for(i = 2; i <= NF; i++) {
+		dependencies[ndep++] = $i
+	}
 }
 
 END {
 	for(i = 0; i < ncollect; i++)
 		print "src/layout_" lnames[i] ".o"
+
+	for(i = 0; i < ndep; i++) {
+		if(!depseen[dependencies[i]]) {
+			print "src/" dependencies[i] ".o"
+			depseen[dependencies[i]]++
+		}
+	}
 }
