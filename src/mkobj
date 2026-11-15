@@ -1,0 +1,14 @@
+#!/bin/awk -f
+
+BEGIN {
+	ncollect = 0
+}
+
+{
+	lnames[ncollect++] = $1;
+}
+
+END {
+	for(i = 0; i < ncollect; i++)
+		print "src/layout_" lnames[i] ".o"
+}

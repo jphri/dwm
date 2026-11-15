@@ -48,3 +48,9 @@ monocle(Monitor *m)
 		               m->wh - 2 * currentconfig->appearance.gappx);
 	}
 }
+
+Layout layout_monocle = {
+	.name = "monocle",
+	.symbol = "[M]",
+	.arrange = monocle,
+};

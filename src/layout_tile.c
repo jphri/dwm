@@ -77,3 +77,8 @@ tile(Monitor *m)
 	}
 }
 
+Layout layout_tile = {
+	.name = "tile",
+	.symbol = "[]=",
+	.arrange = tile
+};
