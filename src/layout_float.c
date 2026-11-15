@@ -27,7 +27,7 @@
 #include "fns.h"
 
 Layout layout_float = {
-	.name = "float", 
+	.name = "floating", 
 	.symbol = "><>",
 	.arrange = NULL,
 };

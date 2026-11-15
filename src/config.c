@@ -29,19 +29,6 @@ static Arg ploadarg(cfg_t *cfg);
 
 /* See LICENSE file for copyright and license details. */
 
-/* layout(s) */
-const Layout layouts[] = {
-	/* symbol     arrange function */
-	{ .symbol = "[]=",
-	  .name = "tile",
-	  .arrange = tile }, /* first entry is default */
-	{ .symbol = "><>",
-	  .name = "floating",
-	  .arrange = NULL }, /* no layout function means floating behavior */
-	{ .symbol = "[M]", .name = "monocle", .arrange = monocle },
-};
-int layoutscount = LENGTH(layouts);
-
 static struct {
 	const char *name;
 	void (*fn)(const Arg *);
@@ -308,20 +295,17 @@ parsefunc(cfg_t *cfg, cfg_opt_t *opt, const char *value, void *result)
 int
 parselayout(cfg_t *cfg, cfg_opt_t *opt, const char *value, void *result)
 {
-	static struct {
-		const char *name;
-		const Layout *lt;
-	} lts[] = {
-		{ .name = "tile", .lt = layouts + 0 },
-		{ .name = "floating", .lt = layouts + 1 },
-		{ .name = "monocle", .lt = layouts + 2 },
-	};
+	extern Layout *layouttab[];
 
-	for (int i = 0; i < LENGTH(lts); i++) {
-		if (strcmp(lts[i].name, value) == 0) {
-			*(void **)result = (void *)lts[i].lt;
+	Layout **llist = layouttab;
+
+	while(*llist) {
+		Layout *l = *llist;
+		if(strcmp(l->name, value) == 0) {
+			*(void**)result = (void*)l;
 			return 0;
 		}
+		llist++;
 	}
 
 	result = NULL;

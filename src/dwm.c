@@ -525,15 +525,17 @@ createmon(void)
 {
 	Monitor *m;
 
+	extern Layout *layouttab[];
+
 	m = ecalloc(1, sizeof(Monitor));
 	m->tagset[0] = m->tagset[1] = 1;
 	m->mfact = currentconfig->lsettings.mfact;
 	m->nmaster = currentconfig->lsettings.nmaster;
 	m->showbar = currentconfig->appearance.showbar;
 	m->topbar = currentconfig->appearance.topbar;
-	m->lt[0] = &layouts[0];
-	m->lt[1] = &layouts[1 % layoutscount];
-	strncpy(m->ltsymbol, layouts[0].symbol, sizeof m->ltsymbol);
+	m->lt[0] = layouttab[0];
+	m->lt[1] = layouttab[0];
+	strncpy(m->ltsymbol, layouttab[0]->symbol, sizeof m->ltsymbol);
 	return m;
 }
 
