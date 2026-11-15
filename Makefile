@@ -3,7 +3,7 @@
 
 include config.mk
 
-OBJ   = src/drw.o src/dwm.o src/util.o src/config.o src/parse_key.o src/tags.o src/layout.o src/movestack.o
+OBJ   = src/drw.o src/dwm.o src/util.o src/config.o src/parse_key.o src/tags.o src/layout.o src/movestack.o src/layout_tile.o src/layout_monocle.o
 ENTRY = src/main.o
 
 TESTS=\
