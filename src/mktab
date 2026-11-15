@@ -1,0 +1,52 @@
+#!/bin/awk -f
+
+BEGIN {
+	ncollect = 0
+}
+
+{
+	lnames[ncollect++] = $1;
+}
+
+END {
+	print "#include <X11/X.h>"
+	print "#include <X11/Xatom.h>"
+	print "#include <X11/Xlib.h>"
+	print "#include <X11/Xproto.h>"
+	print "#include <X11/Xutil.h>"
+	print "#include <X11/cursorfont.h>"
+	print "#include <X11/keysym.h>"
+	print "#include <errno.h>"
+	print "#include <locale.h>"
+	print "#include <signal.h>"
+	print "#include <stdarg.h>"
+	print "#include <stdio.h>"
+	print "#include <stdlib.h>"
+	print "#include <string.h>"
+	print "#include <sys/types.h>"
+	print "#include <sys/wait.h>"
+	print "#include <unistd.h>"
+	print "#ifdef XINERAMA"
+	print "#include <X11/extensions/Xinerama.h>"
+	print "#endif /* XINERAMA */"
+	print "#include <X11/Xft/Xft.h>"
+	print "#include \"drw.h\""
+	print "#include \"util.h\""
+	print "#include \"dat.h\""
+	print "#include \"fns.h\""
+
+	print ""
+
+	for(i = 0; i < ncollect; i++) {
+		print "extern Layout layout_" lnames[i] ";"
+	}
+	
+	print ""
+
+	print "Layout *layouttab[] = {"
+	for(i = 0; i < ncollect; i++) {
+		print "	&layout_" lnames[i] ","
+	}
+	print "	NULL,"
+	print "};"
+}

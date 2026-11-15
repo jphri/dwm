@@ -3,7 +3,9 @@
 
 include config.mk
 
-OBJ   = src/drw.o src/dwm.o src/util.o src/config.o src/parse_key.o src/tags.o src/layout.o src/movestack.o
+LAYOUT_OBJECTS=$(shell src/mkobj < src/layouts)
+
+OBJ   = src/drw.o src/dwm.o src/util.o src/config.o src/parse_key.o src/tags.o src/layout.o src/movestack.o src/tab.o $(LAYOUT_OBJECTS)
 ENTRY = src/main.o
 
 TESTS=\
@@ -28,9 +30,13 @@ dwm: ${OBJ} ${ENTRY}
 test_%: src/test_%.c ${OBJ}
 	${CC} -o $@ $^ ${LDFLAGS}
 
+src/tab.c: src/layouts src/mktab 
+	src/mktab < $< > $@
+
 clean:
 	rm -f ${TESTS}
 	rm -f dwm ${OBJ} ${ENTRY} dwm-${VERSION}.tar.gz
+	rm -f src/tab.c
 
 dist: clean
 	mkdir -p dwm-${VERSION}

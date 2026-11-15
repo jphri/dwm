@@ -525,15 +525,17 @@ createmon(void)
 {
 	Monitor *m;
 
+	extern Layout *layouttab[];
+
 	m = ecalloc(1, sizeof(Monitor));
 	m->tagset[0] = m->tagset[1] = 1;
 	m->mfact = currentconfig->lsettings.mfact;
 	m->nmaster = currentconfig->lsettings.nmaster;
 	m->showbar = currentconfig->appearance.showbar;
 	m->topbar = currentconfig->appearance.topbar;
-	m->lt[0] = &layouts[0];
-	m->lt[1] = &layouts[1 % layoutscount];
-	strncpy(m->ltsymbol, layouts[0].symbol, sizeof m->ltsymbol);
+	m->lt[0] = layouttab[0];
+	m->lt[1] = layouttab[0];
+	strncpy(m->ltsymbol, layouttab[0]->symbol, sizeof m->ltsymbol);
 	return m;
 }
 
@@ -1096,28 +1098,6 @@ maprequest(XEvent *e)
 	}
 }
 
-void
-monocle(Monitor *m)
-{
-	unsigned int n = 0;
-	Client *c;
-
-	for (c = m->clients; c; c = c->next) {
-		if (ISVISIBLE(c)) {
-			n++;
-		}
-	}
-	if (n > 0) { /* override layout symbol */
-		snprintf(m->ltsymbol, sizeof m->ltsymbol, "[%d]", n);
-	}
-
-	for (c = nexttiled(m->clients); c; c = nexttiled(c->next)) {
-		resize_arrange(c, m->wx + currentconfig->appearance.gappx,
-		               m->wy + currentconfig->appearance.gappx,
-		               m->ww - 2 * currentconfig->appearance.gappx,
-		               m->wh - 2 * currentconfig->appearance.gappx);
-	}
-}
 
 void
 motionnotify(XEvent *e)
@@ -1793,57 +1773,6 @@ void
 resize_arrange(Client *c, int x, int y, int w, int h)
 {
 	resize(c, x, y, w - (2 * c->bw), h - (2 * c->bw), 0);
-}
-
-void
-tile(Monitor *m)
-{
-	unsigned int i, n, h, mw, my, ty;
-	Client *c;
-
-	for (n = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), n++)
-		;
-	if (n == 0) {
-		return;
-	}
-
-	if (n > m->nmaster) {
-		mw = m->nmaster ? m->ww * m->mfact : 0;
-	} else {
-		mw = m->ww;
-	}
-	for (i = my = ty = 0, c = nexttiled(m->clients); c;
-	     c = nexttiled(c->next), i++) {
-		if (i < m->nmaster) {
-			h = (m->wh - my) / (MIN(n, m->nmaster) - i) -
-			    2 * currentconfig->appearance.gappx;
-
-			resize_arrange(
-				c, m->wx + currentconfig->appearance.gappx,
-				m->wy + my + currentconfig->appearance.gappx,
-				mw - 2 * currentconfig->appearance.gappx, h);
-
-			if (my + HEIGHT(c) < m->wh) {
-				my += HEIGHT(c) +
-				      2 * currentconfig->appearance.gappx;
-			}
-		} else {
-			h = (m->wh - ty) / (n - i) -
-			    2 * currentconfig->appearance.gappx;
-
-			resize_arrange(
-				c, m->wx + mw + currentconfig->appearance.gappx,
-				m->wy + ty + currentconfig->appearance.gappx,
-				m->ww - mw -
-					2 * currentconfig->appearance.gappx,
-				h);
-
-			if (ty + HEIGHT(c) < m->wh) {
-				ty += HEIGHT(c) +
-				      2 * currentconfig->appearance.gappx;
-			}
-		}
-	}
 }
 
 void
