@@ -47,7 +47,10 @@ key { bind = "super +          Return" func = zoom                              
 key { bind = "super +          Tab"    func = view                                   }
 key { bind = "super + shift +  c"      func = killclient                             }
 key { bind = "super +          t"      func = setlayout       layout = "tile"        }
-key { bind = "super +          f"      func = setlayout       layout = "floating"    }
+key { bind = "super + shift +  t"      func = setlayout       layout = "tatami"      }
+key { bind = "super +          f"      func = setlayout       layout = "spiral"      }
+key { bind = "super + shift +  f"      func = setlayout       layout = "dwindle"     }
+key { bind = "super + shift +  g"      func = setlayout       layout = "floating"    }
 key { bind = "super +          m"      func = setlayout       layout = "monocle"     }
 key { bind = "super +          u"      func = setlayout       layout = "centered_master"     }
 key { bind = "super +          o"      func = setlayout       layout = "centered_master_float"     }
