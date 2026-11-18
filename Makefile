@@ -5,7 +5,7 @@ include config.mk
 
 LAYOUT_OBJECTS=$(shell src/mkobj < src/layouts)
 
-OBJ   = src/drw.o src/dwm.o src/util.o src/config.o src/parse_key.o src/tags.o src/layout.o src/movestack.o src/tab.o $(LAYOUT_OBJECTS)
+OBJ   = src/drw.o src/dwm.o src/util.o src/config.o src/parse_key.o src/tags.o src/layout.o src/movestack.o src/tab.o src/movemouse.o $(LAYOUT_OBJECTS)
 ENTRY = src/main.o
 
 TESTS=\

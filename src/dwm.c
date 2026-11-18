@@ -46,7 +46,6 @@
 #include "util.h"
 
 /* macros */
-#define BUTTONMASK (ButtonPressMask | ButtonReleaseMask)
 #define CLEANMASK(mask)                                                        \
 	(mask & ~(numlockmask | LockMask) &                                    \
 	 (ShiftMask | ControlMask | Mod1Mask | Mod2Mask | Mod3Mask |           \
@@ -54,7 +53,6 @@
 #define INTERSECT(x, y, w, h, m)                                               \
 	(MAX(0, MIN((x) + (w), (m)->wx + (m)->ww) - MAX((x), (m)->wx)) *       \
 	 MAX(0, MIN((y) + (h), (m)->wy + (m)->wh) - MAX((y), (m)->wy)))
-#define MOUSEMASK (BUTTONMASK | PointerMotionMask)
 #define TAGMASK   ((1 << currentconfig->tagscount) - 1)
 #define TEXTW(X)  (drw_fontset_getwidth(drw, (X)) + lrpad)
 
@@ -62,8 +60,6 @@
 #include "fns.h"
 
 static void handle_event(XEvent *ev);
-
-typedef void (*XEventHandlerList[LASTEvent])(XEvent *);
 
 XEventHandlerList idle_state = {
 	[ButtonPress] = buttonpress,
@@ -95,7 +91,7 @@ XEventHandlerList *handler = &idle_state;
 
 Atom wmatom[WMLast], netatom[NetLast], dwmatom[DwmLast];
 static int running = 1;
-static Cur *cursor[CurLast];
+Cur *cursor[CurLast];
 static Clr **scheme;
 Display *dpy;
 static Drw *drw;
@@ -1105,7 +1101,6 @@ maprequest(XEvent *e)
 	}
 }
 
-
 void
 motionnotify(XEvent *e)
 {
@@ -1122,91 +1117,6 @@ motionnotify(XEvent *e)
 		focus(NULL);
 	}
 	mon = m;
-}
-
-void
-movemouse(const Arg *arg)
-{
-	int x, y, ocx, ocy, nx, ny;
-	Client *c;
-	Monitor *m;
-	XEvent ev;
-	Time lasttime = 0;
-
-	if (!(c = selmon->sel)) {
-		return;
-	}
-	if (c->isfullscreen) { /* no support moving fullscreen windows by mouse
-		                */
-		return;
-	}
-	restack(selmon);
-	ocx = c->x;
-	ocy = c->y;
-	if (XGrabPointer(dpy, root, False, MOUSEMASK, GrabModeAsync,
-	                 GrabModeAsync, None, cursor[CurMove]->cursor,
-	                 CurrentTime) != GrabSuccess) {
-		return;
-	}
-	if (!getrootptr(&x, &y)) {
-		return;
-	}
-
-	int grabbing = 1;
-	do {
-		XNextEvent(dpy, &ev);
-		switch (ev.type) {
-		case MotionNotify:
-			if ((ev.xmotion.time - lasttime) <=
-			    (1000 / currentconfig->lsettings.refreshrate)) {
-				continue;
-			}
-			lasttime = ev.xmotion.time;
-
-			nx = ocx + (ev.xmotion.x - x);
-			ny = ocy + (ev.xmotion.y - y);
-			if (abs(selmon->wx - nx) <
-			    currentconfig->appearance.snap) {
-				nx = selmon->wx;
-			} else if (abs((selmon->wx + selmon->ww) -
-			               (nx + WIDTH(c))) <
-			           currentconfig->appearance.snap) {
-				nx = selmon->wx + selmon->ww - WIDTH(c);
-			}
-			if (abs(selmon->wy - ny) <
-			    currentconfig->appearance.snap) {
-				ny = selmon->wy;
-			} else if (abs((selmon->wy + selmon->wh) -
-			               (ny + HEIGHT(c))) <
-			           currentconfig->appearance.snap) {
-				ny = selmon->wy + selmon->wh - HEIGHT(c);
-			}
-			if (!c->isfloating &&
-			    selmon->lt[selmon->sellt]->arrange &&
-			    (abs(nx - c->x) > currentconfig->appearance.snap ||
-			     abs(ny - c->y) > currentconfig->appearance.snap)) {
-				togglefloating(NULL);
-			}
-			if (!selmon->lt[selmon->sellt]->arrange ||
-			    c->isfloating) {
-				resize(c, nx, ny, c->w, c->h, 1);
-			}
-			break;
-		case KeyPress:
-			break;
-		case ButtonRelease:
-			grabbing = 0;
-			break;
-		default:
-			handle_event(&ev);
-		}
-	} while (grabbing);
-	XUngrabPointer(dpy, CurrentTime);
-	if ((m = recttomon(c->x, c->y, c->w, c->h)) != selmon) {
-		sendmon(c, m);
-		selmon = m;
-		focus(NULL);
-	}
 }
 
 Client *

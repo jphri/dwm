@@ -2,6 +2,9 @@
 #define HEIGHT(X)    ((X)->h + 2 * (X)->bw)
 #define ISVISIBLE(C) ((C->tags & C->mon->tagset[C->mon->seltags]))
 
+#define BUTTONMASK (ButtonPressMask | ButtonReleaseMask)
+#define MOUSEMASK (BUTTONMASK | PointerMotionMask)
+
 enum {
 	CurNormal,
 	CurResize,
@@ -161,6 +164,8 @@ typedef struct {
 	int buttonscount;
 } Config;
 
+typedef void (*XEventHandlerList[LASTEvent])(XEvent *);
+
 extern Config *currentconfig;
 extern const Layout layouts[];
 extern int layoutscount;
@@ -170,3 +175,9 @@ extern Display *dpy;
 extern Window root;
 
 extern Atom dwmatom[DwmLast];
+
+extern XEventHandlerList *handler;
+extern XEventHandlerList idle_state;
+extern XEventHandlerList move_mouse_state;
+
+extern Cur *cursor[CurLast];
