@@ -61,16 +61,11 @@
 #include "dat.h"
 #include "fns.h"
 
-/* variables */
-static const char broken[] = "broken";
-static char stext[256];
-static int screen;
-static int sw, sh; /* X display screen geometry width, height */
-static int bh;     /* bar height */
-static int lrpad;  /* sum of left and right padding for text */
-static int (*xerrorxlib)(Display *, XErrorEvent *);
-static unsigned int numlockmask = 0;
-static void (*handler[LASTEvent])(XEvent *) = {
+static void handle_event(XEvent *ev);
+
+typedef void (*XEventHandlerList[LASTEvent])(XEvent *);
+
+XEventHandlerList idle_state = {
 	[ButtonPress] = buttonpress,
 	[ClientMessage] = clientmessage,
 	[ConfigureRequest] = configurerequest,
@@ -86,6 +81,18 @@ static void (*handler[LASTEvent])(XEvent *) = {
 	[PropertyNotify] = propertynotify,
 	[UnmapNotify] = unmapnotify
 };
+
+/* variables */
+static const char broken[] = "broken";
+static char stext[256];
+static int screen;
+static int sw, sh; /* X display screen geometry width, height */
+static int bh;     /* bar height */
+static int lrpad;  /* sum of left and right padding for text */
+static int (*xerrorxlib)(Display *, XErrorEvent *);
+static unsigned int numlockmask = 0;
+XEventHandlerList *handler = &idle_state;
+
 Atom wmatom[WMLast], netatom[NetLast], dwmatom[DwmLast];
 static int running = 1;
 static Cur *cursor[CurLast];
@@ -1191,9 +1198,7 @@ movemouse(const Arg *arg)
 			grabbing = 0;
 			break;
 		default:
-			if (handler[ev.type]) {
-				handler[ev.type](&ev);
-			}
+			handle_event(&ev);
 		}
 	} while (grabbing);
 	XUngrabPointer(dpy, CurrentTime);
@@ -1376,9 +1381,7 @@ resizemouse(const Arg *arg)
 			grabbing = 0;
 			break;
 		default:
-			if (handler[ev.type]) {
-				handler[ev.type](&ev);
-			}
+			handle_event(&ev);
 		}
 	} while (grabbing);
 	XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w + c->bw - 1,
@@ -1429,10 +1432,16 @@ run(void)
 	XEvent ev;
 	/* main event loop */
 	XSync(dpy, False);
-	while (running && !XNextEvent(dpy, &ev)) {
-		if (handler[ev.type]) {
-			handler[ev.type](&ev); /* call handler */
-		}
+	while(running && !XNextEvent(dpy, &ev)) {
+		handle_event(&ev);
+	}
+}
+
+void
+handle_event(XEvent *ev)
+{
+	if ((*handler)[ev->type]) {
+		(*handler)[ev->type](ev); /* call handler */
 	}
 }
 
