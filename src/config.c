@@ -3,6 +3,9 @@
 #include <confuse.h>
 #include <stdlib.h>
 #include <string.h>
+#include <X11/Xft/Xft.h>
+
+#include "drw.h"
 
 #include "dat.h"
 #include "fns.h"

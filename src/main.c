@@ -20,10 +20,11 @@
 #endif /* XINERAMA */
 #include <X11/Xft/Xft.h>
 
-#include "dat.h"
 #include "drw.h"
-#include "fns.h"
 #include "util.h"
+
+#include "dat.h"
+#include "fns.h"
 
 int
 main(int argc, char *argv[])
