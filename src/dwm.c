@@ -1667,6 +1667,7 @@ toggleview(const Arg *arg)
 		selmon->tagset[selmon->seltags] ^ (arg->ui & TAGMASK);
 
 	if (newtagset) {
+		selmon->seltags ^= 1; /* toggle sel tagset */
 		selmon->tagset[selmon->seltags] = newtagset;
 		focus(NULL);
 		arrange(selmon);
