@@ -38,7 +38,7 @@ static struct {
 } funcs[] = {
 
 #define FN(name) { #name, name }
-	FN(spawn),       FN(togglebar),      FN(focusstack), FN(incnmaster),
+	FN(spawn),       FN(focusstack), FN(incnmaster),
 	FN(setmfact),    FN(zoom),           FN(view),       FN(killclient),
 	FN(setlayout),   FN(togglefloating), FN(tag),        FN(focusmon),
 	FN(tagmon),      FN(toggleview),     FN(toggletag),  FN(movemouse),
