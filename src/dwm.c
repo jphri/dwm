@@ -1666,6 +1666,11 @@ updategeom(void)
 				m->my = m->wy = unique[i].y_org;
 				m->mw = m->ww = unique[i].width;
 				m->mh = m->wh = unique[i].height;
+
+				m->wx += currentconfig->appearance.left;
+				m->wy += currentconfig->appearance.top;
+				m->ww -= currentconfig->appearance.left + currentconfig->appearance.right;
+				m->wh -= currentconfig->appearance.top + currentconfig->appearance.bottom;
 			}
 		}
 		/* removed monitors if n > nn */
@@ -1956,6 +1961,15 @@ restart(const Arg *arg)
 	Monitor *m;
 
 	for (m = mons; m; m = m->next) {
+		m->wx = m->mx;
+		m->wy = m->my;
+		m->ww = m->mw;
+		m->wh = m->mh;
+		
+		m->wx += currentconfig->appearance.left;
+		m->wy += currentconfig->appearance.top;
+		m->ww -= currentconfig->appearance.left + currentconfig->appearance.right;
+		m->wh -= currentconfig->appearance.top + currentconfig->appearance.bottom;
 		for (c = m->clients; c; c = c->next) {
 			c->oldbw = c->bw;
 			c->bw = currentconfig->appearance.borderpx;
