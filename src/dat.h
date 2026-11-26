@@ -133,7 +133,6 @@ typedef struct {
 		unsigned int snap;
 		int showbar;
 		int topbar;
-		int left, right, top, bottom;
 		unsigned int gappx;
 		const char **fonts;
 		int fontscount;

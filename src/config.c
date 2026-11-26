@@ -65,10 +65,6 @@ loadconfig(const char *path)
 	static cfg_opt_t appearance_opts[] = {
 		CFG_INT("borderpx", 0, CFGF_NODEFAULT),
 		CFG_INT("snap", 0, CFGF_NODEFAULT),
-		CFG_INT("left", 0, CFGF_NODEFAULT), 
-		CFG_INT("right", 0, CFGF_NODEFAULT),
-		CFG_INT("top", 0, CFGF_NODEFAULT),
-		CFG_INT("bottom", 0, CFGF_NODEFAULT),
 		CFG_BOOL("showbar", 0, CFGF_NODEFAULT),
 		CFG_BOOL("topbar", 0, CFGF_NODEFAULT),
 		CFG_INT("gappx", 0, CFGF_NODEFAULT),
@@ -160,10 +156,6 @@ loadappearance(cfg_t *sec)
 	currentconfig->appearance.snap = cfg_getint(sec, "snap");
 	currentconfig->appearance.showbar = cfg_getbool(sec, "showbar");
 	currentconfig->appearance.topbar = cfg_getbool(sec, "topbar");
-	currentconfig->appearance.left = cfg_getint(sec, "left");
-	currentconfig->appearance.right = cfg_getint(sec, "right");
-	currentconfig->appearance.top = cfg_getint(sec, "top");
-	currentconfig->appearance.bottom = cfg_getint(sec, "bottom");
 	currentconfig->appearance.gappx = cfg_getint(sec, "gappx");
 	currentconfig->appearance.fontscount = cfg_size(sec, "fonts");
 	currentconfig->appearance.fonts =

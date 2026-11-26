@@ -5,10 +5,6 @@ appearance {
 	topbar = true
 	gappx = 8
 	fonts = { "monospace:size=12" }
-	left = 0
-	right = 0
-	top = 0
-	bottom = 0
 	colors {
 		normal { 
 			fg = "#bbbbbb" 
