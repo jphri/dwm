@@ -36,6 +36,7 @@ rule {
 
 key { bind = "super +          p"      func = spawn           cmd = "rofi -show run" }
 key { bind = "super + shift +  Return" func = spawn           cmd = "st"             }
+key { bind = "super + shift +  b"      func = togglebar                              }
 key { bind = "super +          j"      func = focusstack      i = +1                 }
 key { bind = "super +          k"      func = focusstack      i = -1                 }
 key { bind = "super +          i"      func = incnmaster      i = +1                 }

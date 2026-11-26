@@ -83,6 +83,7 @@ static const char broken[] = "broken";
 static char stext[256];
 static int screen;
 static int sw, sh; /* X display screen geometry width, height */
+static int bh;     /* bar height */
 static int lrpad;  /* sum of left and right padding for text */
 static int (*xerrorxlib)(Display *, XErrorEvent *);
 static unsigned int numlockmask = 0;
@@ -173,6 +174,12 @@ applysizehints(Client *c, int *x, int *y, int *w, int *h, int interact)
 		if (*y + *h + 2 * c->bw <= m->wy) {
 			*y = m->wy;
 		}
+	}
+	if (*h < bh) {
+		*h = bh;
+	}
+	if (*w < bh) {
+		*w = bh;
 	}
 	if (currentconfig->lsettings.resizehints || c->isfloating ||
 	    !c->mon->lt[c->mon->sellt]->arrange) {
@@ -276,7 +283,22 @@ buttonpress(XEvent *e)
 		selmon = m;
 		focus(NULL);
 	}
-	if ((c = wintoclient(ev->window))) {
+	if (ev->window == selmon->barwin) {
+		i = x = 0;
+		do {
+			x += TEXTW(currentconfig->tags[i]);
+		} while (ev->x >= x && ++i < currentconfig->tagscount);
+		if (i < currentconfig->tagscount) {
+			click = ClkTagBar;
+			arg.ui = 1 << i;
+		} else if (ev->x < x + TEXTW(selmon->ltsymbol)) {
+			click = ClkLtSymbol;
+		} else if (ev->x > selmon->ww - (int)TEXTW(stext)) {
+			click = ClkStatusText;
+		} else {
+			click = ClkWinTitle;
+		}
+	} else if ((c = wintoclient(ev->window))) {
 		focus(c);
 		restack(selmon);
 		XAllowEvents(dpy, ReplayPointer, CurrentTime);
@@ -354,6 +376,8 @@ cleanupmon(Monitor *mon)
 			;
 		m->next = mon->next;
 	}
+	XUnmapWindow(dpy, mon->barwin);
+	XDestroyWindow(dpy, mon->barwin);
 	free(mon);
 }
 
@@ -415,6 +439,8 @@ configurenotify(XEvent *e)
 		sw = ev->width;
 		sh = ev->height;
 		if (updategeom() || dirty) {
+			drw_resize(drw, sw, bh);
+			updatebars();
 			for (m = mons; m; m = m->next) {
 				for (c = m->clients; c; c = c->next) {
 					if (c->isfullscreen) {
@@ -422,6 +448,8 @@ configurenotify(XEvent *e)
 						             m->mw, m->mh);
 					}
 				}
+				XMoveResizeWindow(dpy, m->barwin, m->wx, m->by,
+				                  m->ww, bh);
 			}
 			focus(NULL);
 			arrange(NULL);
@@ -506,6 +534,8 @@ createmon(void)
 	m->tagset[0] = m->tagset[1] = 1;
 	m->mfact = currentconfig->lsettings.mfact;
 	m->nmaster = currentconfig->lsettings.nmaster;
+	m->showbar = currentconfig->appearance.showbar;
+	m->topbar = currentconfig->appearance.topbar;
 	m->lt[0] = layouttab[0];
 	m->lt[1] = layouttab[0];
 	strncpy(m->ltsymbol, layouttab[0]->symbol, sizeof m->ltsymbol);
@@ -569,6 +599,81 @@ dirtomon(int dir)
 }
 
 void
+drawbar(Monitor *m)
+{
+	int x, w, tw = 0;
+	int boxs = drw->fonts->h / 9;
+	int boxw = drw->fonts->h / 6 + 2;
+	unsigned int i, occ = 0, urg = 0;
+	Client *c;
+
+	if (!m->showbar) {
+		return;
+	}
+
+	/* draw status first so it can be overdrawn by tags later */
+	if (m == selmon) { /* status is only drawn on selected monitor */
+		drw_setscheme(drw, scheme[SchemeNorm]);
+		tw = TEXTW(stext) - lrpad + 2; /* 2px right padding */
+		drw_text(drw, m->ww - tw, 0, tw, bh, 0, stext, 0);
+	}
+
+	for (c = m->clients; c; c = c->next) {
+		occ |= c->tags;
+		if (c->isurgent) {
+			urg |= c->tags;
+		}
+	}
+	x = 0;
+	for (i = 0; i < currentconfig->tagscount; i++) {
+		w = TEXTW(currentconfig->tags[i]);
+		drw_setscheme(
+			drw,
+			scheme[m->tagset[m->seltags] & 1 << i ? SchemeSel :
+		                                                SchemeNorm]);
+		drw_text(drw, x, 0, w, bh, lrpad / 2, currentconfig->tags[i],
+		         urg & 1 << i);
+		if (occ & 1 << i) {
+			drw_rect(drw, x + boxs, boxs, boxw, boxw,
+			         m == selmon && selmon->sel &&
+			                 selmon->sel->tags & 1 << i,
+			         urg & 1 << i);
+		}
+		x += w;
+	}
+	w = TEXTW(m->ltsymbol);
+	drw_setscheme(drw, scheme[SchemeNorm]);
+	x = drw_text(drw, x, 0, w, bh, lrpad / 2, m->ltsymbol, 0);
+
+	if ((w = m->ww - tw - x) > bh) {
+		if (m->sel) {
+			drw_setscheme(
+				drw,
+				scheme[m == selmon ? SchemeSel : SchemeNorm]);
+			drw_text(drw, x, 0, w, bh, lrpad / 2, m->sel->name, 0);
+			if (m->sel->isfloating) {
+				drw_rect(drw, x + boxs, boxs, boxw, boxw,
+				         m->sel->isfixed, 0);
+			}
+		} else {
+			drw_setscheme(drw, scheme[SchemeNorm]);
+			drw_rect(drw, x, 0, w, bh, 1, 1);
+		}
+	}
+	drw_map(drw, m->barwin, 0, 0, m->ww, bh);
+}
+
+void
+drawbars(void)
+{
+	Monitor *m;
+
+	for (m = mons; m; m = m->next) {
+		drawbar(m);
+	}
+}
+
+void
 enternotify(XEvent *e)
 {
 	Client *c;
@@ -595,6 +700,10 @@ expose(XEvent *e)
 {
 	Monitor *m;
 	XExposeEvent *ev = &e->xexpose;
+
+	if (ev->count == 0 && (m = wintomon(ev->window))) {
+		drawbar(m);
+	}
 }
 
 void
@@ -625,6 +734,7 @@ focus(Client *c)
 		XDeleteProperty(dpy, root, netatom[NetActiveWindow]);
 	}
 	selmon->sel = c;
+	drawbars();
 }
 
 /* there are some broken focus acquiring clients needing extra handling */
@@ -1053,11 +1163,13 @@ propertynotify(XEvent *e)
 			break;
 		case XA_WM_HINTS:
 			updatewmhints(c);
+			drawbars();
 			break;
 		}
 		if (ev->atom == XA_WM_NAME || ev->atom == netatom[NetWMName]) {
 			updatetitle(c);
 			if (c == c->mon->sel) {
+				drawbar(c->mon);
 			}
 		}
 		if (ev->atom == netatom[NetWMWindowType]) {
@@ -1122,6 +1234,7 @@ restack(Monitor *m)
 	XEvent ev;
 	XWindowChanges wc;
 
+	drawbar(m);
 	if (!m->sel) {
 		return;
 	}
@@ -1130,6 +1243,7 @@ restack(Monitor *m)
 	}
 	if (m->lt[m->sellt]->arrange) {
 		wc.stack_mode = Below;
+		wc.sibling = m->barwin;
 		for (c = m->stack; c; c = c->snext) {
 			if (!c->isfloating && ISVISIBLE(c)) {
 				XConfigureWindow(dpy, c->win,
@@ -1303,6 +1417,8 @@ setlayout(const Arg *arg)
 	        sizeof selmon->ltsymbol);
 	if (selmon->sel) {
 		arrange(selmon);
+	} else {
+		drawbar(selmon);
 	}
 	updatelayout();
 }
@@ -1353,6 +1469,7 @@ setup(void)
 		die("no fonts could be loaded.");
 	}
 	lrpad = drw->fonts->h;
+	bh = drw->fonts->h + 2;
 	updategeom();
 	/* init atoms */
 	utf8string = XInternAtom(dpy, "UTF8_STRING", False);
@@ -1387,6 +1504,7 @@ setup(void)
 			drw, currentconfig->appearance.colors[i], 3);
 	}
 	/* init bars */
+	updatebars();
 	updatestatus();
 	updatetags();
 	updatelayout();
@@ -1498,6 +1616,16 @@ resize_arrange(Client *c, int x, int y, int w, int h)
 }
 
 void
+togglebar(const Arg *arg)
+{
+	selmon->showbar = !selmon->showbar;
+	updatebarpos(selmon);
+	XMoveResizeWindow(dpy, selmon->barwin, selmon->wx, selmon->by,
+	                  selmon->ww, bh);
+	arrange(selmon);
+}
+
+void
 togglefloating(const Arg *arg)
 {
 	if (!selmon->sel) {
@@ -1604,6 +1732,44 @@ unmapnotify(XEvent *e)
 }
 
 void
+updatebars(void)
+{
+	Monitor *m;
+	XSetWindowAttributes wa = { .override_redirect = True,
+		                    .background_pixmap = ParentRelative,
+		                    .event_mask =
+		                            ButtonPressMask | ExposureMask };
+	XClassHint ch = { "dwm", "dwm" };
+	for (m = mons; m; m = m->next) {
+		if (m->barwin) {
+			continue;
+		}
+		m->barwin = XCreateWindow(
+			dpy, root, m->wx, m->by, m->ww, bh, 0,
+			DefaultDepth(dpy, screen), CopyFromParent,
+			DefaultVisual(dpy, screen),
+			CWOverrideRedirect | CWBackPixmap | CWEventMask, &wa);
+		XDefineCursor(dpy, m->barwin, cursor[CurNormal]->cursor);
+		XMapRaised(dpy, m->barwin);
+		XSetClassHint(dpy, m->barwin, &ch);
+	}
+}
+
+void
+updatebarpos(Monitor *m)
+{
+	m->wy = m->my;
+	m->wh = m->mh;
+	if (m->showbar) {
+		m->wh -= bh;
+		m->by = m->topbar ? m->wy : m->wy + m->wh;
+		m->wy = m->topbar ? m->wy + bh : m->wy;
+	} else {
+		m->by = -bh;
+	}
+}
+
+void
 updateclientlist(void)
 {
 	Client *c;
@@ -1666,6 +1832,7 @@ updategeom(void)
 				m->my = m->wy = unique[i].y_org;
 				m->mw = m->ww = unique[i].width;
 				m->mh = m->wh = unique[i].height;
+				updatebarpos(m);
 			}
 		}
 		/* removed monitors if n > nn */
@@ -1696,6 +1863,7 @@ updategeom(void)
 			dirty = 1;
 			mons->mw = mons->ww = sw;
 			mons->mh = mons->wh = sh;
+			updatebarpos(mons);
 		}
 	}
 	if (dirty) {
@@ -1782,6 +1950,7 @@ updatestatus(void)
 	if (!gettextprop(root, XA_WM_NAME, stext, sizeof(stext))) {
 		strcpy(stext, "dwm-" VERSION);
 	}
+	drawbar(selmon);
 }
 
 void
@@ -1871,6 +2040,11 @@ wintomon(Window w)
 	if (w == root && getrootptr(&x, &y)) {
 		return recttomon(x, y, 1, 1);
 	}
+	for (m = mons; m; m = m->next) {
+		if (w == m->barwin) {
+			return m;
+		}
+	}
 	if ((c = wintoclient(w))) {
 		return c->mon;
 	}
@@ -1951,6 +2125,9 @@ restart(const Arg *arg)
 		scheme[i] = drw_scm_create(
 			drw, currentconfig->appearance.colors[i], 3);
 	}
+
+	updatebars();
+	updatestatus();
 
 	Client *c;
 	Monitor *m;
